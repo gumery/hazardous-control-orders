@@ -83,7 +83,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
      *           'transferredPrices'=> // 已付款订单总价
      *           'paidOrders'=> // 已结算订单总数
      *           'paidPrices'=> // 已结算订单总价
-     *           'products'=> [// 第一屏相关的商品列表
+     *           'data'=> [// 第一屏相关的商品列表
      *               [
      *                   'name'=> // 商品名称
      *                   'quantity'=> //总量
@@ -111,7 +111,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $tableName = self::_getOPTableName();
         $db = \Gini\DataBase::db();
 
-        $sql = "SELECT :groupby, COUNT(order_id) AS count_order, SUM(order_price) AS sum_order_price, SUM(IF(order_status=:statustransferred, 1, 0)) AS count_transferred_order, SUM(IF(order_status=:statustransferred, order_price, 0)) AS sum_transferred_order_price, SUM(IF(order_status=:statuspaid, 1, 0)) AS count_paid_order, SUM(IF(order_status=:statuspaid, order_price, 0)) AS sum_paid_order_price FROM :tablename GROUP BY :groupby LIMIT {$start},{$perpage}";
+        $sql = "SELECT product_type, group_name, vendor_name, :groupby, COUNT(order_id) AS count_order, SUM(order_price) AS sum_order_price, SUM(IF(order_status=:statustransferred, 1, 0)) AS count_transferred_order, SUM(IF(order_status=:statustransferred, order_price, 0)) AS sum_transferred_order_price, SUM(IF(order_status=:statuspaid, 1, 0)) AS count_paid_order, SUM(IF(order_status=:statuspaid, order_price, 0)) AS sum_paid_order_price FROM :tablename GROUP BY :groupby LIMIT {$start},{$perpage}";
         $rows = $db->query(strtr($sql, [
             ':tablename' => $db->quoteIdent($tableName),
             ':groupby' => $db->quoteIdent($groupBy),
@@ -119,14 +119,28 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             ':statuspaid' => $db->quote(\Gini\ORM\Order::STATUS_PAID),
         ]))->rows();
         foreach ($rows as $row) {
+            switch ($type) {
+            case 'type':
+                $title = $row->product_type;
+                break;
+            case 'group':
+                $title = $row->group_name;
+                break;
+            case 'vendor':
+                $title = $row->vendor_name;
+                break;
+            }
             $result[] = [
+                'type'=> $type,
+                'value'=> $row->$groupBy,
+                'title'=> $title,
                 'totalOrders' => $row->count_order,
                 'totalPrices' => $row->sum_order_price,
                 'transferredOrders' => $row->count_transferred_order,
                 'transferredPrices' => $row->sum_transferred_order_price,
                 'paidOrders' => $row->count_paid_order,
                 'paidPrices' => $row->sum_paid_order_price,
-                'products' => $this->_getProducts($groupBy, $row->$groupBy),
+                'data' => $this->_getProducts($groupBy, $row->$groupBy),
             ];
         }
 
@@ -165,7 +179,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
 
         $sql = 'SELECT COUNT(*) FROM :tablename WHERE :col=:value GROUP BY cas_no';
         $total = $db->query(strtr($sql, [
-            ':tableName' => $db->quoteIdent($tableName),
+            ':tablename' => $db->quoteIdent($tableName),
             ':col' => $db->quoteIdent(self::$allowedTypes[$type]),
             ':value' => $db->quote($params['type_value']),
         ]))->count();
