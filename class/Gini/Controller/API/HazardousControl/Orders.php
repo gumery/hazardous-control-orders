@@ -166,7 +166,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $sql = 'SELECT COUNT(*) FROM :tablename WHERE :col=:value GROUP BY cas_no';
         $total = $db->query(strtr($sql, [
             ':tableName' => $db->quoteIdent($tableName),
-            ':col' => $db->quoteIdentself::$allowedTypes[$type]),
+            ':col' => $db->quoteIdent(self::$allowedTypes[$type]),
             ':value' => $db->quote($params['type_value']),
         ]))->count();
 
