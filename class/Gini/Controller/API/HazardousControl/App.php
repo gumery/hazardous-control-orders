@@ -1,8 +1,8 @@
 <?php
 
-namespace Gini\Controller\API;
+namespace Gini\Controller\API\HazardousControl;
 
-class APP extends \Gini\Controller\API\Base
+class APP extends \Gini\Controller\API\HazardousControl\Base
 {
     /**
         * @brief 重写构造函数，避免authorize断言判断
