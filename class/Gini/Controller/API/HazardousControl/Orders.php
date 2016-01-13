@@ -53,7 +53,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $token = md5(J($params));
         $sql = 'SELECT COUNT(*) FROM :tablename GROUP BY :groupby';
         $total = $db->query($sql, [
-            ':tableName' => $tableName,
+            ':tablename' => $tableName,
             ':groupby' => self::$allowedTypes[$type],
         ])->count();
 
@@ -111,19 +111,13 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $tableName = self::_getOPTableName();
         $db = \Gini\DataBase::db();
 
-        $sql = "SELECT :groupby, COUNT(order_id) AS count_order, SUM(order_price) AS sum_order_price,
-            SUM(IF(order_status=:statustransferred, 1, 0)) AS count_transferred_order,
-            SUM(IF(order_status=:statustransferred, order_price, 0)) AS sum_transferred_order_price
-            SUM(IF(order_status=:statuspaid, 1, 0)) AS count_paid_order,
-            SUM(IF(order_status=:statuspaid, order_price, 0)) AS sum_paid_order_price
-            FROM :tablename GROUP BY :groupby LIMIT {$start},{$perpage}";
-        $rows = $db->query($sql, [
-            ':tablename' => $tableName,
-            ':groupby' => $groupBy,
-        ], [
-            ':statustransferred' => \Gini\ORM\Order::STATUS_TRANSFERRED,
-            ':statuspaid' => \Gini\ORM\Order::STATUS_PAID,
-        ])->rows();
+        $sql = "SELECT :groupby, COUNT(order_id) AS count_order, SUM(order_price) AS sum_order_price, SUM(IF(order_status=:statustransferred, 1, 0)) AS count_transferred_order, SUM(IF(order_status=:statustransferred, order_price, 0)) AS sum_transferred_order_price, SUM(IF(order_status=:statuspaid, 1, 0)) AS count_paid_order, SUM(IF(order_status=:statuspaid, order_price, 0)) AS sum_paid_order_price FROM :tablename GROUP BY :groupby LIMIT {$start},{$perpage}";
+        $rows = $db->query(strtr($sql, [
+            ':tablename' => $db->quoteIdent($tableName),
+            ':groupby' => $db->quoteIdent($groupBy),
+            ':statustransferred' => $db->quote(\Gini\ORM\Order::STATUS_TRANSFERRED),
+            ':statuspaid' => $db->quote(\Gini\ORM\Order::STATUS_PAID),
+        ]))->rows();
         foreach ($rows as $row) {
             $result[] = [
                 'totalOrders' => $row->count_order,
@@ -170,12 +164,11 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $token = md5(J($params));
 
         $sql = 'SELECT COUNT(*) FROM :tablename WHERE :col=:value GROUP BY cas_no';
-        $total = $db->query($sql, [
-            ':tableName' => $tableName,
-            ':col' => self::$allowedTypes[$type],
-        ], [
-            ':value' => $params['type_value'],
-        ])->count();
+        $total = $db->query(strtr($sql, [
+            ':tableName' => $db->quoteIdent($tableName),
+            ':col' => $db->quoteIdentself::$allowedTypes[$type]),
+            ':value' => $db->quote($params['type_value']),
+        ]))->count();
 
         $_SESSION[$token] = $params;
 
@@ -229,12 +222,11 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $tableName = self::_getOPTableName();
         $db = \Gini\DataBase::db();
         $sql = "SELECT cas_no FROM :tablename WHERE :col=:value GROUP BY cas_no LIMIT {$start},{$perpage}";
-        $rows = $db->query($sql, [
-            ':tablename' => $tableName,
-            ':col' => $col,
-        ], [
-            ':value' => $value,
-        ])->rows();
+        $rows = $db->query(strtr($sql, [
+            ':tablename' => $db->quoteIdent($tableName),
+            ':col' => $db->quoteIdent($col),
+            ':value' => $db->quote($value),
+        ]))->rows();
 
         $result = [];
         foreach ($rows as $row) {
@@ -245,13 +237,12 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             $tmpPrices = 0;
             while (true) {
                 $sql = "SELECT product_name,product_package,product_quantity,product_total_price FROM :tablename WHERE :col=:value AND cas_no=:casno LIMIT {$tmpStart},{$tmpPerpage}";
-                $tmpRows = $db->query($sql, [
-                    ':tablename' => $tableName,
-                    ':col' => $col,
-                ], [
-                    ':value' => $value,
-                    ':casno' => $row->cas_no,
-                ])->rows();
+                $tmpRows = $db->query(strtr($sql, [
+                    ':tablename' => $db->quoteIdent($tableName),
+                    ':col' => $db->quoteIdent($col),
+                    ':value' => $db->quote($value),
+                    ':casno' => $db->quote($row->cas_no),
+                ]))->rows();
                 if (!count($tmpRows)) {
                     break;
                 }
