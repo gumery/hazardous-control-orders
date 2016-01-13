@@ -44,7 +44,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             'token' => '',
         ];
         $type = $params['type'];
-        if (!in_array($type, self::$allowedTypes)) {
+        if (!isset(self::$allowedTypes[$type])) {
             return $result;
         }
 
@@ -161,7 +161,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             'token' => '',
         ];
         $type = $params['type'];
-        if (!in_array($type, self::$allowedTypes)) {
+        if (!isset(self::$allowedTypes[$type])) {
             return $result;
         }
 
