@@ -273,7 +273,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             }
             $result[] = [
                 'name' => $tmpName,
-                'quantity' => round($tmpCount, 2),
+                'quantity' => $tmpCount,
                 'price' => round($tmpPrices, 2),
             ];
         }
