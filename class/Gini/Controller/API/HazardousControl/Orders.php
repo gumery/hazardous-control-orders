@@ -140,7 +140,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 'transferredPrices' => $row->sum_transferred_order_price,
                 'paidOrders' => $row->count_paid_order,
                 'paidPrices' => $row->sum_paid_order_price,
-                'data' => $this->_getProducts($groupBy, $row->$groupBy),
+                'data' => !$this->_allowShowDatas($type, $row->product_type) ? [] : $this->_getProducts($groupBy, $row->$groupBy),
             ];
         }
 
@@ -170,6 +170,10 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         ];
         $type = $params['type'];
         if (!isset(self::$allowedTypes[$type])) {
+            return $result;
+        }
+
+        if (!$this->_allowShowDatas($type, self::$allowedTypes[$type])) {
             return $result;
         }
 
@@ -277,9 +281,128 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         return $result;
     }
 
+    private function _allowShowDatas($type, $productType=null)
+    {
+        if ($type!='type') {
+            return false;
+        }
+        if (!in_array($productType, [
+            'hazardous',
+            'drug_precursor',
+            'highly_toxic'
+        ])) {
+            return false;
+        }
+        return true;
+    }
+
     private function _computeSum($count, $package, $quantity)
     {
-        // TODO 需要考虑不同package的问题
-        return $count + $package * $quantity;
+        $a = $count;
+        $b = $package * $quantity . $this->_getUnit($package);
+        $result = $this->_convert2SameUnit($a, $b);
+        if (!$result) {
+            return $a;
+        }
+        list($a, $b, $unit) = $result;
+        return round($a + $b, 2) . $unit;
+    }
+
+    private function _convert2SameUnit($a, $b)
+    {
+        $a = $a ?: 0;
+        $b = $b ?: 0;
+        $pattern = '/^(-?\d+(?:\.\d+)?)([a-z]+)?$/i';
+        if (!preg_match($pattern, trim($a), $aMatches)) {
+            return;
+        }
+        $pattern = '/^(-?\d+(?:\.\d+)?)([a-z]+)?$/i';
+        if (!preg_match($pattern, trim($b), $bMatches)) {
+            return;
+        }
+
+        $aUnit = $aMatches[2];
+        $bUnit = $bMatches[2];
+        $unit = $aUnit ? $aUnit : ($bUnit ?: '');
+        $a = round($aMatches[1] * $this->_u2u($aUnit?:$unit, $unit), 2);
+        $b = round($bMatches[1] * $this->_u2u($bUnit?:$unit, $unit), 2);
+
+        return [$a, $b, strtolower($unit)];
+    }
+
+    private function _getUnitList($unit=null)
+    {
+        $data = [
+            [
+                'ul'=> 1000000,
+                'μl'=> 1000000,
+                'ml'=> 1000,
+                'cl'=> 100,
+                'dl'=> 10,
+                'l'=>1
+            ],
+            [
+                'ug'=> 1000000000,
+                'μg'=> 1000000000,
+                'mg'=> 1000000,
+                'g'=> 1000,
+                'kg'=>1
+            ]
+        ];
+
+        if ($unit) {
+            $unit = strtolower($unit);
+            foreach ($data as $us) {
+                if (isset($us[$unit])) {
+                    return $us;
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    private function _u2u($from, $to)
+    {
+        $from = strtolower($from);
+        $to = strtolower($to);
+        $data = $this->_getUnitList($from);
+        if (isset($data[$from]) && isset($data[$to])) {
+            return $data[$to] / $data[$from];
+        }
+        return 1;
+    }
+
+    private function _formatUnit($data, $defaultUnit=null)
+    {
+        if (!$data) return $data;
+        $unit=$this->_getUnit($data) ?: $defaultUnit;
+        if (!$unit) {
+            return $data;
+        }
+        $units = $this->_getUnitList($unit);
+        if (empty($units)) {
+            return $data;
+        }
+        foreach ($units as $u=>$v) {
+            $tmp = round($data * $this->_u2u($unit, $u), 2) . strtolower($u);
+            if (strlen($tmp) < strlen($data)) {
+                $data= $tmp;
+                $unit = $u;
+            }
+        }
+
+        if (!$this->_getUnit($data)) {
+            $data = $data . strtolower($unit);
+        }
+        return $data;
+    }
+
+    private function _getUnit($string)
+    {
+        if (preg_match('/([a-zA-Z]+)$/', trim($string), $matches)) {
+            return $matches[1];
+        }
+        return '';
     }
 }
