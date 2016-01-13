@@ -221,20 +221,38 @@ class RelationshipOP extends \Gini\Controller\CLI
         }
     }
 
+    private static $rpc;
+    private static function _getRPC()
+    {
+        if (self::$rpc) return self::$rpc;
+        $config = \Gini\Config::get('hazardous-control-orders.rpc');
+        $url = $config['url'];
+        $rpc = \Gini\IoC::construct('\Gini\RPC', $url);
+        self::$rpc = $rpc;
+        return $rpc;
+    }
+
     private function _getProductName($name, $cas=null)
     {
-        // TODO 通过chem_db获取cas号对应的商品名称
         if (!$cas) return $name;
+        $rpc = self::_getRPC();
+        $data= (array)$rpc->product->chem->getProduct($cas);
+        if (empty($data)) {
+            return $name;
+        }
+        foreach ($data as $d) {
+            return $d['name'];
+        }
         return $name;
     }
 
     private function _getProductType($type, $subType=null, $cas=null)
     {
         if (!$cas) return $type;
-        // TODO 通过chem_db获取cas号的化学品类型
         $types = [
-            2=> 'hazardous',
-            3=> 'drug_precursor'
+            \Gini\ORM\Product::RGT_TYPE_HAZARDOUS=> 'hazardous',
+            \Gini\ORM\Product::RGT_TYPE_DRUG_PRECURSOR=> 'drug_precursor',
+            \Gini\ORM\Product::RGT_TYPE_HIGHLY_TOXIC=> 'highly_toxic'
         ];
         if ($subType && isset($types[$subType])) {
             return $types[$subType];
