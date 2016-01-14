@@ -445,7 +445,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $to = ($to && $to>=$min && $to<=$max) ? $to : $max;
         return [
             date('Y-m-d H:i:s', min($from, $to)),
-            date('Y-m-d H:i:s', max($from, $to))
+            date('Y-m-d 23:59:59', max($from, $to))
         ];
     }
 }
