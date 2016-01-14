@@ -204,7 +204,7 @@ class RelationshipOP extends \Gini\Controller\CLI
                         // order status
                         $db->quote($row->status),
                         // product name
-                        $db->quote($this->_getProductName($item['name'], $product->cas_no)),
+                        $db->quote($this->_getProductName($item['name'], $product->cas_no, $myType)),
                     ]) . ')';
                 }
             }
@@ -232,16 +232,26 @@ class RelationshipOP extends \Gini\Controller\CLI
         return $rpc;
     }
 
-    private function _getProductName($name, $cas=null)
+    private static $data = [];
+    private function _getProductName($name, $cas=null, $type=null)
     {
         if (!$cas) return $name;
-        $rpc = self::_getRPC();
-        $data= (array)$rpc->product->chem->getProduct($cas);
+        if (isset(self::$data[$cas])) {
+            $data = self::$data[$cas];
+        }
+        else {
+            $rpc = self::_getRPC();
+            self::$data[$cas] = $data = (array)$rpc->product->chem->getProduct($cas);
+        }
         if (empty($data)) {
             return $name;
         }
-        foreach ($data as $d) {
-            return $d['name'];
+        if ($type) {
+            foreach ($data as $d) {
+                if ($d['type']==$type) {
+                    return $d['name'];
+                }
+            }
         }
         return $name;
     }
