@@ -177,7 +177,7 @@ class RelationshipOP extends \Gini\Controller\CLI
                         // orderid
                         $db->quote($row->id),
                         // order repeat id
-                        $db->quote($i==0 ? $row->id:0);
+                        $db->quote($i==0 ? $row->id:0),
                         // orderctime
                         $db->quote($row->mtime),
                         // ordermd5
