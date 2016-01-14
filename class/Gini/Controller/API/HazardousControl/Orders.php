@@ -157,7 +157,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 'paidPrices' => $row->sum_paid_order_price,
                 'canceledOrders'=> $row->count_canceled_order,
                 'cancledPrices'=> $row->sum_canceled_order_price,
-                'data' => !$this->_allowShowDatas($type, $row->product_type) ? [] : $this->_getProducts($groupBy, $row->$groupBy),
+                'data' => !$this->_allowShowDatas($type, $row->product_type) ? [] : $this->_getProducts($groupBy, $row->$groupBy, 0, 5, $from, $to),
             ];
         }
 
@@ -257,12 +257,12 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $to = $params['to'];
         list($from, $to) = $this->_challengeFromTo($from, $to);
 
-        $result = $this->_getProducts($type, $value, $start, $perpage, $from=null, $to=null);
+        $result = $this->_getProducts($type, $value, $start, $perpage, $from, $to);
 
         return $result;
     }
 
-    private function _getProducts($col, $value, $start = 0, $perpage = 5, $from, $to)
+    private function _getProducts($col, $value, $start = 0, $perpage = 5, $from=null, $to=null)
     {
         $tableName = self::_getOPTableName();
         $db = \Gini\DataBase::db();
