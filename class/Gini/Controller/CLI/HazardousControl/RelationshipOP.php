@@ -131,6 +131,17 @@ class RelationshipOP extends \Gini\Controller\CLI
 
     public function actionBuild()
     {
+        $pidFile = APP_PATH.'/'.DATA_DIR.'/hazardous-control-orders-build.pid';
+        if (file_exists($pidFile)) {
+            $rawPID = (int) file_get_contents($pidFile);
+            // 如果进程已经在执行 直接退出
+            if ($rawPID && $this->filterWorkers($rawPID)) {
+                return;
+            }
+        }
+        $pid = getmypid();
+        file_put_contents($pidFile, $pid);
+
         $db = \Gini\Database::db();
         $tableName = self::_getTableName();
         $max = $db->query("SELECT max(order_mtime) FROM {$tableName}")->value() ?: 0;
@@ -273,5 +284,12 @@ class RelationshipOP extends \Gini\Controller\CLI
             return $types[$subType];
         }
         return $type;
+    }
+
+    private function filterWorkers($pid)
+    {
+        $ps = shell_exec("ps -p {$pid}");
+
+        return count(explode("\n", $ps)) > 2;
     }
 }
