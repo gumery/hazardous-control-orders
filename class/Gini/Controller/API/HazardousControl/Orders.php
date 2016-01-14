@@ -29,6 +29,8 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
      * @param $params
      *   [
      *       'type'=> 'group | vendor | type'
+     *       'from'=>
+     *       'to'=>
      *   ]
      *
      * @return
@@ -44,17 +46,23 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             'token' => '',
         ];
         $type = $params['type'];
+        $from = $params['from'];
+        $to = $params['to'];
         if (!isset(self::$allowedTypes[$type])) {
             return $result;
         }
+        list($from, $to) = $this->_challengeFromTo($from, $to);
 
         $db = \Gini\DataBase::db();
         $tableName = self::_getOPTableName();
         $token = md5(J($params));
-        $sql = 'SELECT COUNT(*) FROM :tablename GROUP BY :groupby';
+        $sql = 'SELECT COUNT(*) FROM :tablename WHERE order_mtime BETWEEN :from AND :to GROUP BY :groupby';
         $total = $db->query($sql, [
             ':tablename' => $tableName,
             ':groupby' => self::$allowedTypes[$type],
+        ], [
+            ':from'=> $from,
+            ':to'=> $to
         ])->count();
 
         $_SESSION[$token] = $params;
@@ -107,11 +115,14 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $perpage = min($perpage, 25);
 
         $type = $params['type'];
+        $from = $params['from'];
+        $to = $params['to'];
+        list($from, $to) = $this->_challengeFromTo($from, $to);
         $groupBy = self::$allowedTypes[$type];
         $tableName = self::_getOPTableName();
         $db = \Gini\DataBase::db();
 
-        $sql = "SELECT product_type, group_name, vendor_name, :groupby, SUM(IF(order_repeat_id!=0 AND order_status!=:statuscanceled, 1, 0)) AS count_order, SUM(IF(order_repeat_id!=0 AND order_status!=:statuscanceled, order_price, 0)) AS sum_order_price, SUM(IF(order_repeat_id!=0 AND order_status=:statustransferred, 1, 0)) AS count_transferred_order, SUM(IF(order_repeat_id!=0 AND order_status=:statustransferred, order_price, 0)) AS sum_transferred_order_price, SUM(IF(order_repeat_id!=0 AND order_status=:statuspaid, 1, 0)) AS count_paid_order, SUM(IF(order_repeat_id!=0 AND order_status=:statuspaid, order_price, 0)) AS sum_paid_order_price, SUM(IF(order_repeat_id!=0 AND order_status=:statuscanceled, 1, 0)) AS count_canceled_order, SUM(IF(order_repeat_id!=0 AND order_status=:statuscanceled, order_price, 0)) AS sum_canceled_order_price FROM :tablename GROUP BY :groupby LIMIT {$start},{$perpage}";
+        $sql = "SELECT product_type, group_name, vendor_name, :groupby, SUM(IF(order_repeat_id!=0 AND order_status!=:statuscanceled, 1, 0)) AS count_order, SUM(IF(order_repeat_id!=0 AND order_status!=:statuscanceled, order_price, 0)) AS sum_order_price, SUM(IF(order_repeat_id!=0 AND order_status=:statustransferred, 1, 0)) AS count_transferred_order, SUM(IF(order_repeat_id!=0 AND order_status=:statustransferred, order_price, 0)) AS sum_transferred_order_price, SUM(IF(order_repeat_id!=0 AND order_status=:statuspaid, 1, 0)) AS count_paid_order, SUM(IF(order_repeat_id!=0 AND order_status=:statuspaid, order_price, 0)) AS sum_paid_order_price, SUM(IF(order_repeat_id!=0 AND order_status=:statuscanceled, 1, 0)) AS count_canceled_order, SUM(IF(order_repeat_id!=0 AND order_status=:statuscanceled, order_price, 0)) AS sum_canceled_order_price FROM :tablename WHERE order_mtime BETWEEN :from AND :to GROUP BY :groupby LIMIT {$start},{$perpage}";
 
         $rows = $db->query(strtr($sql, [
             ':tablename' => $db->quoteIdent($tableName),
@@ -119,6 +130,8 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             ':statustransferred' => $db->quote(\Gini\ORM\Order::STATUS_TRANSFERRED),
             ':statuspaid' => $db->quote(\Gini\ORM\Order::STATUS_PAID),
             ':statuscanceled' => $db->quote(\Gini\ORM\Order::STATUS_CANCELED),
+            ':from'=> $db->quote($from),
+            ':to'=> $db->quote($to)
         ]))->rows();
         foreach ($rows as $row) {
             switch ($type) {
@@ -157,7 +170,9 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
      * @param $params
      *   [
      *       'type'=> 'group | vendor | type'
-     *       'type_value'=> ''
+     *       'type_value'=> '',
+     *       'from'=>
+     *       'to'=>
      *   ]
      *
      * @return
@@ -173,6 +188,8 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             'token' => '',
         ];
         $type = $params['type'];
+        $from = $params['from'];
+        $to = $params['to'];
         if (!isset(self::$allowedTypes[$type])) {
             return $result;
         }
@@ -181,15 +198,18 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             return $result;
         }
 
+        list($from, $to) = $this->_challengeFromTo($from, $to);
         $db = \Gini\DataBase::db();
         $tableName = self::_getOPTableName();
         $token = md5(J($params));
 
-        $sql = 'SELECT COUNT(*) FROM :tablename WHERE :col=:value GROUP BY cas_no';
+        $sql = 'SELECT COUNT(*) FROM :tablename WHERE :col=:value AND order_mtime BETWEEN :from AND :to GROUP BY cas_no';
         $total = $db->query(strtr($sql, [
             ':tablename' => $db->quoteIdent($tableName),
             ':col' => $db->quoteIdent(self::$allowedTypes[$type]),
             ':value' => $db->quote($params['type_value']),
+            ':from'=> $db->quote($from),
+            ':to'=> $db->quote($to)
         ]))->count();
 
         $_SESSION[$token] = $params;
@@ -233,21 +253,26 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $type = $params['type'];
         $type = self::$allowedTypes[$type];
         $value = $params['type_value'];
+        $from = $params['from'];
+        $to = $params['to'];
+        list($from, $to) = $this->_challengeFromTo($from, $to);
 
-        $result = $this->_getProducts($type, $value, $start, $perpage);
+        $result = $this->_getProducts($type, $value, $start, $perpage, $from=null, $to=null);
 
         return $result;
     }
 
-    private function _getProducts($col, $value, $start = 0, $perpage = 5)
+    private function _getProducts($col, $value, $start = 0, $perpage = 5, $from, $to)
     {
         $tableName = self::_getOPTableName();
         $db = \Gini\DataBase::db();
-        $sql = "SELECT cas_no FROM :tablename WHERE :col=:value GROUP BY cas_no LIMIT {$start},{$perpage}";
+        $sql = "SELECT cas_no FROM :tablename WHERE :col=:value AND order_mtime BETWEEN :from AND :to GROUP BY cas_no LIMIT {$start},{$perpage}";
         $rows = $db->query(strtr($sql, [
             ':tablename' => $db->quoteIdent($tableName),
             ':col' => $db->quoteIdent($col),
             ':value' => $db->quote($value),
+            ':from'=> $db->quote($from),
+            ':to'=> $db->quote($to)
         ]))->rows();
 
         $result = [];
@@ -408,5 +433,19 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             return $matches[1];
         }
         return '';
+    }
+
+    private function _challengeFromTo($from, $to)
+    {
+        $min = strtotime('1998-01-01 00:00:00');
+        $max = time();
+        $from = @strtotime($from);
+        $to = @strtotime($to);
+        $from = ($from && $from>=$min && $from<=$max) ? $from : $min;
+        $to = ($to && $to>=$min && $to<=$max) ? $to : $max;
+        return [
+            date('Y-m-d H:i:s', min($from, $to)),
+            date('Y-m-d H:i:s', max($from, $to))
+        ];
     }
 }
