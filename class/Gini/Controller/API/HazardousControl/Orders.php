@@ -149,9 +149,9 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 'data' => !$this->_allowShowDatas($type, $row->product_type) ? [] : $this->_getProducts($groupBy, $row->$groupBy, 0, 5, $from, $to),
             ];
             // 求有效总数信息
+            $tmpStart = 0;
+            $tmpPerpage = 100;
             while (true) {
-                $tmpStart = 0;
-                $tmpPerpage = 100;
                 $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status!=:statuscanceled GROUP BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
                 $tmpRows = $db->query(strtr($sql, [
                     ':tablename' => $db->quoteIdent($tableName),
@@ -171,9 +171,9 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 }
             }
             // 求已付款总数信息
+            $tmpStart = 0;
+            $tmpPerpage = 100;
             while (true) {
-                $tmpStart = 0;
-                $tmpPerpage = 100;
                 $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statustransferred GROUP BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
                 $tmpRows = $db->query(strtr($sql, [
                     ':tablename' => $db->quoteIdent($tableName),
@@ -193,9 +193,9 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 }
             }
             // 求已结算总数信息
+            $tmpStart = 0;
+            $tmpPerpage = 100;
             while (true) {
-                $tmpStart = 0;
-                $tmpPerpage = 100;
                 $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statuspaid GROUP BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
                 $tmpRows = $db->query(strtr($sql, [
                     ':tablename' => $db->quoteIdent($tableName),
@@ -215,10 +215,10 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 }
             }
             // 求已取消总数信息
+            $tmpStart = 0;
+            $tmpPerpage = 100;
             while (true) {
-                $tmpStart = 0;
-                $tmpPerpage = 100;
-                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statuscanceled BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
+                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statuscanceled GROUP BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
                 $tmpRows = $db->query(strtr($sql, [
                     ':tablename' => $db->quoteIdent($tableName),
                     ':groupby' => $db->quoteIdent($groupBy),
