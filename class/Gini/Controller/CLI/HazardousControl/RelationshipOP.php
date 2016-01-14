@@ -208,7 +208,7 @@ class RelationshipOP extends \Gini\Controller\CLI
                         // groupname
                         $db->quote($row->group->title),
                         // orderprice
-                        $db->quote(round($row->price)),
+                        $db->quote(round($row->price, 2)),
                         // product package
                         $db->quote($product->package),
                         // product quantity
