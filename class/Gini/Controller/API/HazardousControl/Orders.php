@@ -122,7 +122,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $tableName = self::_getOPTableName();
         $db = \Gini\DataBase::db();
 
-        $sql = "SELECT product_type, group_id, group_name, vendor_id, vendor_name FROM :tablename WHERE order_mtime BETWEEN :from AND :to GROUP BY :groupby LIMIT {$start},{$end}";
+        $sql = "SELECT product_type, group_id, group_name, vendor_id, vendor_name FROM :tablename WHERE order_mtime BETWEEN :from AND :to GROUP BY :groupby LIMIT {$start},{$perpage}";
         $rows = $db->query(strtr($sql, [
             ':tablename' => $db->quoteIdent($tableName),
             ':from'=> $db->quote($from),
@@ -152,11 +152,11 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             while (true) {
                 $tmpStart = 0;
                 $tmpPerpage = 100;
-                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status!=:statuscanceled GROUP BY order_id";
+                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status!=:statuscanceled GROUP BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
                 $tmpRows = $db->query(strtr($sql, [
                     ':tablename' => $db->quoteIdent($tableName),
                     ':groupby' => $db->quoteIdent($groupBy),
-                    ':groupbyvalue' => $db->quoteIdent($row->$groupBy),
+                    ':groupbyvalue' => $db->quote($row->$groupBy),
                     ':statuscanceled' => $db->quote(\Gini\ORM\Order::STATUS_CANCELED),
                     ':statustransferred' => $db->quote(\Gini\ORM\Order::STATUS_TRANSFERRED),
                     ':statuspaid' => $db->quote(\Gini\ORM\Order::STATUS_PAID),
@@ -174,11 +174,11 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             while (true) {
                 $tmpStart = 0;
                 $tmpPerpage = 100;
-                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statustransferred GROUP BY order_id";
+                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statustransferred GROUP BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
                 $tmpRows = $db->query(strtr($sql, [
                     ':tablename' => $db->quoteIdent($tableName),
                     ':groupby' => $db->quoteIdent($groupBy),
-                    ':groupbyvalue' => $db->quoteIdent($row->$groupBy),
+                    ':groupbyvalue' => $db->quote($row->$groupBy),
                     ':statuscanceled' => $db->quote(\Gini\ORM\Order::STATUS_CANCELED),
                     ':statustransferred' => $db->quote(\Gini\ORM\Order::STATUS_TRANSFERRED),
                     ':statuspaid' => $db->quote(\Gini\ORM\Order::STATUS_PAID),
@@ -196,11 +196,11 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             while (true) {
                 $tmpStart = 0;
                 $tmpPerpage = 100;
-                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statuspaid GROUP BY order_id";
+                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statuspaid GROUP BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
                 $tmpRows = $db->query(strtr($sql, [
                     ':tablename' => $db->quoteIdent($tableName),
                     ':groupby' => $db->quoteIdent($groupBy),
-                    ':groupbyvalue' => $db->quoteIdent($row->$groupBy),
+                    ':groupbyvalue' => $db->quote($row->$groupBy),
                     ':statuscanceled' => $db->quote(\Gini\ORM\Order::STATUS_CANCELED),
                     ':statustransferred' => $db->quote(\Gini\ORM\Order::STATUS_TRANSFERRED),
                     ':statuspaid' => $db->quote(\Gini\ORM\Order::STATUS_PAID),
@@ -218,11 +218,11 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             while (true) {
                 $tmpStart = 0;
                 $tmpPerpage = 100;
-                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statuscanceled BY order_id";
+                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statuscanceled BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
                 $tmpRows = $db->query(strtr($sql, [
                     ':tablename' => $db->quoteIdent($tableName),
                     ':groupby' => $db->quoteIdent($groupBy),
-                    ':groupbyvalue' => $db->quoteIdent($row->$groupBy),
+                    ':groupbyvalue' => $db->quote($row->$groupBy),
                     ':statuscanceled' => $db->quote(\Gini\ORM\Order::STATUS_CANCELED),
                     ':statustransferred' => $db->quote(\Gini\ORM\Order::STATUS_TRANSFERRED),
                     ':statuspaid' => $db->quote(\Gini\ORM\Order::STATUS_PAID),
