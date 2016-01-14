@@ -274,7 +274,18 @@ class RelationshipOP extends \Gini\Controller\CLI
 
     private function _getProductType($type, $subType=null, $cas=null)
     {
-        if (!$cas) return $type;
+        if ($cas) {
+            if (isset(self::$data[$cas])) {
+                $data = self::$data[$cas];
+            }
+            else {
+                $rpc = self::_getRPC();
+                self::$data[$cas] = $data = (array)$rpc->product->chem->getProduct($cas);
+            }
+            foreach ($data as $d) {
+                return $d['type'];
+            }
+        }
         $types = [
             \Gini\ORM\Product::RGT_TYPE_HAZARDOUS=> 'hazardous',
             \Gini\ORM\Product::RGT_TYPE_DRUG_PRECURSOR=> 'drug_precursor',
