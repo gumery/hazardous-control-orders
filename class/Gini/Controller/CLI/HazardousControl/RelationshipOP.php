@@ -25,9 +25,6 @@ class RelationshipOP extends \Gini\Controller\CLI
             'order_id' => [
                 'type' => 'bigint',
             ],
-            'order_repeat_id' => [
-                'type' => 'bigint',
-            ],
             'order_mtime'=> [
                 'type'=> 'datetime',
             ],
@@ -187,8 +184,6 @@ class RelationshipOP extends \Gini\Controller\CLI
                     $values[] = '(' . implode(',',[
                         // orderid
                         $db->quote($row->id),
-                        // order repeat id
-                        $db->quote($i==0 ? $row->id:0),
                         // orderctime
                         $db->quote($row->mtime),
                         // ordermd5

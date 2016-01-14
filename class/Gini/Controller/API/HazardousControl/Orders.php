@@ -122,17 +122,14 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $tableName = self::_getOPTableName();
         $db = \Gini\DataBase::db();
 
-        $sql = "SELECT product_type, group_name, vendor_name, :groupby, SUM(IF(order_repeat_id!=0 AND order_status!=:statuscanceled, 1, 0)) AS count_order, SUM(IF(order_repeat_id!=0 AND order_status!=:statuscanceled, order_price, 0)) AS sum_order_price, SUM(IF(order_repeat_id!=0 AND order_status=:statustransferred, 1, 0)) AS count_transferred_order, SUM(IF(order_repeat_id!=0 AND order_status=:statustransferred, order_price, 0)) AS sum_transferred_order_price, SUM(IF(order_repeat_id!=0 AND order_status=:statuspaid, 1, 0)) AS count_paid_order, SUM(IF(order_repeat_id!=0 AND order_status=:statuspaid, order_price, 0)) AS sum_paid_order_price, SUM(IF(order_repeat_id!=0 AND order_status=:statuscanceled, 1, 0)) AS count_canceled_order, SUM(IF(order_repeat_id!=0 AND order_status=:statuscanceled, order_price, 0)) AS sum_canceled_order_price FROM :tablename WHERE order_mtime BETWEEN :from AND :to GROUP BY :groupby LIMIT {$start},{$perpage}";
-
+        $sql = "SELECT product_type, group_id, group_name, vendor_id, vendor_name FROM :tablename WHERE order_mtime BETWEEN :from AND :to GROUP BY :groupby LIMIT {$start},{$end}";
         $rows = $db->query(strtr($sql, [
             ':tablename' => $db->quoteIdent($tableName),
-            ':groupby' => $db->quoteIdent($groupBy),
-            ':statustransferred' => $db->quote(\Gini\ORM\Order::STATUS_TRANSFERRED),
-            ':statuspaid' => $db->quote(\Gini\ORM\Order::STATUS_PAID),
-            ':statuscanceled' => $db->quote(\Gini\ORM\Order::STATUS_CANCELED),
             ':from'=> $db->quote($from),
-            ':to'=> $db->quote($to)
+            ':to'=> $db->quote($to),
+            ':groupby' => $db->quoteIdent($groupBy),
         ]))->rows();
+
         foreach ($rows as $row) {
             switch ($type) {
             case 'type':
@@ -145,20 +142,101 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 $title = $row->vendor_name;
                 break;
             }
-            $result[] = [
+            $myResult = [
                 'type'=> $type,
                 'value'=> $row->$groupBy,
                 'title'=> $title,
-                'totalOrders' => $row->count_order,
-                'totalPrices' => $row->sum_order_price,
-                'transferredOrders' => $row->count_transferred_order,
-                'transferredPrices' => $row->sum_transferred_order_price,
-                'paidOrders' => $row->count_paid_order,
-                'paidPrices' => $row->sum_paid_order_price,
-                'canceledOrders'=> $row->count_canceled_order,
-                'canceledPrices'=> $row->sum_canceled_order_price,
                 'data' => !$this->_allowShowDatas($type, $row->product_type) ? [] : $this->_getProducts($groupBy, $row->$groupBy, 0, 5, $from, $to),
             ];
+            // 求有效总数信息
+            while (true) {
+                $tmpStart = 0;
+                $tmpPerpage = 100;
+                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status!=:statuscanceled GROUP BY order_id";
+                $tmpRows = $db->query(strtr($sql, [
+                    ':tablename' => $db->quoteIdent($tableName),
+                    ':groupby' => $db->quoteIdent($groupBy),
+                    ':groupbyvalue' => $db->quoteIdent($row->$groupBy),
+                    ':statuscanceled' => $db->quote(\Gini\ORM\Order::STATUS_CANCELED),
+                    ':statustransferred' => $db->quote(\Gini\ORM\Order::STATUS_TRANSFERRED),
+                    ':statuspaid' => $db->quote(\Gini\ORM\Order::STATUS_PAID),
+                    ':from'=> $db->quote($from),
+                    ':to'=> $db->quote($to)
+                ]))->rows();
+                if (!count($tmpRows)) break;
+                $tmpStart += $tmpPerpage;
+                foreach ($tmpRows as $tmpR) {
+                    $myResult['totalOrders'] += $tmpR->ct;
+                    $myResult['totalPrices'] += $tmpR->op;
+                }
+            }
+            // 求已付款总数信息
+            while (true) {
+                $tmpStart = 0;
+                $tmpPerpage = 100;
+                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statustransferred GROUP BY order_id";
+                $tmpRows = $db->query(strtr($sql, [
+                    ':tablename' => $db->quoteIdent($tableName),
+                    ':groupby' => $db->quoteIdent($groupBy),
+                    ':groupbyvalue' => $db->quoteIdent($row->$groupBy),
+                    ':statuscanceled' => $db->quote(\Gini\ORM\Order::STATUS_CANCELED),
+                    ':statustransferred' => $db->quote(\Gini\ORM\Order::STATUS_TRANSFERRED),
+                    ':statuspaid' => $db->quote(\Gini\ORM\Order::STATUS_PAID),
+                    ':from'=> $db->quote($from),
+                    ':to'=> $db->quote($to)
+                ]))->rows();
+                if (!count($tmpRows)) break;
+                $tmpStart += $tmpPerpage;
+                foreach ($tmpRows as $tmpR) {
+                    $myResult['transferredOrders'] += $tmpR->ct;
+                    $myResult['transferredPrices'] += $tmpR->op;
+                }
+            }
+            // 求已结算总数信息
+            while (true) {
+                $tmpStart = 0;
+                $tmpPerpage = 100;
+                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statuspaid GROUP BY order_id";
+                $tmpRows = $db->query(strtr($sql, [
+                    ':tablename' => $db->quoteIdent($tableName),
+                    ':groupby' => $db->quoteIdent($groupBy),
+                    ':groupbyvalue' => $db->quoteIdent($row->$groupBy),
+                    ':statuscanceled' => $db->quote(\Gini\ORM\Order::STATUS_CANCELED),
+                    ':statustransferred' => $db->quote(\Gini\ORM\Order::STATUS_TRANSFERRED),
+                    ':statuspaid' => $db->quote(\Gini\ORM\Order::STATUS_PAID),
+                    ':from'=> $db->quote($from),
+                    ':to'=> $db->quote($to)
+                ]))->rows();
+                if (!count($tmpRows)) break;
+                $tmpStart += $tmpPerpage;
+                foreach ($tmpRows as $tmpR) {
+                    $myResult['paidOrders'] += $tmpR->ct;
+                    $myResult['paidPrices'] += $tmpR->op;
+                }
+            }
+            // 求已取消总数信息
+            while (true) {
+                $tmpStart = 0;
+                $tmpPerpage = 100;
+                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statuscanceled BY order_id";
+                $tmpRows = $db->query(strtr($sql, [
+                    ':tablename' => $db->quoteIdent($tableName),
+                    ':groupby' => $db->quoteIdent($groupBy),
+                    ':groupbyvalue' => $db->quoteIdent($row->$groupBy),
+                    ':statuscanceled' => $db->quote(\Gini\ORM\Order::STATUS_CANCELED),
+                    ':statustransferred' => $db->quote(\Gini\ORM\Order::STATUS_TRANSFERRED),
+                    ':statuspaid' => $db->quote(\Gini\ORM\Order::STATUS_PAID),
+                    ':from'=> $db->quote($from),
+                    ':to'=> $db->quote($to)
+                ]))->rows();
+                if (!count($tmpRows)) break;
+                $tmpStart += $tmpPerpage;
+                foreach ($tmpRows as $tmpR) {
+                    $myResult['canceledOrders'] += $tmpR->ct;
+                    $myResult['canceledPrices'] += $tmpR->op;
+                }
+            }
+            $result[] = $myResult;
         }
 
         return $result;
