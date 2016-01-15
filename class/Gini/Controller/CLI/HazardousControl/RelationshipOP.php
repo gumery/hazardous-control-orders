@@ -275,13 +275,14 @@ class RelationshipOP extends \Gini\Controller\CLI
             }
             else {
                 $rpc = self::_getRPC();
-                self::$data[$cas] = $data = (array)$rpc->product->chem->getProduct($cas);
+                self::$data[$cas] = $data = $rpc->product->chem->getProduct($cas);
             }
-            foreach ($data as $d) {
+            if (is_array($data)) foreach ($data as $d) {
                 return $d['type'];
             }
         }
         $types = [
+            \Gini\ORM\Product::RGT_TYPE_NORMAL=> 'chem_reagent',
             \Gini\ORM\Product::RGT_TYPE_HAZARDOUS=> 'hazardous',
             \Gini\ORM\Product::RGT_TYPE_DRUG_PRECURSOR=> 'drug_precursor',
             \Gini\ORM\Product::RGT_TYPE_HIGHLY_TOXIC=> 'highly_toxic'
