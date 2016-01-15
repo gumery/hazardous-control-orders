@@ -361,13 +361,15 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             $tmpCount = 0;
             $tmpPrices = 0;
             while (true) {
-                $sql = "SELECT product_name,product_package,product_quantity,product_total_price FROM :tablename WHERE :col=:value AND cas_no=:casno AND order_status!=:statuscanceled LIMIT {$tmpStart},{$tmpPerpage}";
+                $sql = "SELECT product_name,product_package,product_quantity,product_total_price FROM :tablename WHERE order_mtime BETWEEN :from AND :to AND :col=:value AND cas_no=:casno AND order_status!=:statuscanceled LIMIT {$tmpStart},{$tmpPerpage}";
                 $tmpRows = $db->query(strtr($sql, [
                     ':tablename' => $db->quoteIdent($tableName),
                     ':col' => $db->quoteIdent($col),
                     ':value' => $db->quote($value),
                     ':casno' => $db->quote($row->cas_no),
-                    ':statuscanceled'=> $db->quote(\Gini\ORM\Order::STATUS_CANCELED)
+                    ':statuscanceled'=> $db->quote(\Gini\ORM\Order::STATUS_CANCELED),
+                    ':from'=> $db->quote($from),
+                    ':to'=> $db->quote($to)
                 ]))->rows();
                 if (!count($tmpRows)) {
                     break;
