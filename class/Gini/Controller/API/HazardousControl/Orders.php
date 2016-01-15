@@ -152,7 +152,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             $tmpStart = 0;
             $tmpPerpage = 100;
             while (true) {
-                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status!=:statuscanceled GROUP BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
+                $sql = "SELECT order_price FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status!=:statuscanceled GROUP BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
                 $tmpRows = $db->query(strtr($sql, [
                     ':tablename' => $db->quoteIdent($tableName),
                     ':groupby' => $db->quoteIdent($groupBy),
@@ -166,15 +166,15 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 if (!count($tmpRows)) break;
                 $tmpStart += $tmpPerpage;
                 foreach ($tmpRows as $tmpR) {
-                    $myResult['totalOrders'] += $tmpR->ct;
-                    $myResult['totalPrices'] += $tmpR->op;
+                    $myResult['totalOrders'] += 1;
+                    $myResult['totalPrices'] += $tmpR->order_price;
                 }
             }
             // 求已付款总数信息
             $tmpStart = 0;
             $tmpPerpage = 100;
             while (true) {
-                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statustransferred GROUP BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
+                $sql = "SELECT order_price FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statustransferred GROUP BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
                 $tmpRows = $db->query(strtr($sql, [
                     ':tablename' => $db->quoteIdent($tableName),
                     ':groupby' => $db->quoteIdent($groupBy),
@@ -188,15 +188,15 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 if (!count($tmpRows)) break;
                 $tmpStart += $tmpPerpage;
                 foreach ($tmpRows as $tmpR) {
-                    $myResult['transferredOrders'] += $tmpR->ct;
-                    $myResult['transferredPrices'] += $tmpR->op;
+                    $myResult['transferredOrders'] += 1;
+                    $myResult['transferredPrices'] += $tmpR->order_price;
                 }
             }
             // 求已结算总数信息
             $tmpStart = 0;
             $tmpPerpage = 100;
             while (true) {
-                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statuspaid GROUP BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
+                $sql = "SELECT order_price FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statuspaid GROUP BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
                 $tmpRows = $db->query(strtr($sql, [
                     ':tablename' => $db->quoteIdent($tableName),
                     ':groupby' => $db->quoteIdent($groupBy),
@@ -210,15 +210,15 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 if (!count($tmpRows)) break;
                 $tmpStart += $tmpPerpage;
                 foreach ($tmpRows as $tmpR) {
-                    $myResult['paidOrders'] += $tmpR->ct;
-                    $myResult['paidPrices'] += $tmpR->op;
+                    $myResult['paidOrders'] += 1;
+                    $myResult['paidPrices'] += $tmpR->order_price;
                 }
             }
             // 求已取消总数信息
             $tmpStart = 0;
             $tmpPerpage = 100;
             while (true) {
-                $sql = "SELECT COUNT(order_id) AS ct,SUM(order_price) AS op FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statuscanceled GROUP BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
+                $sql = "SELECT order_price FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statuscanceled GROUP BY order_id LIMIT {$tmpStart},{$tmpPerpage}";
                 $tmpRows = $db->query(strtr($sql, [
                     ':tablename' => $db->quoteIdent($tableName),
                     ':groupby' => $db->quoteIdent($groupBy),
@@ -232,8 +232,8 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 if (!count($tmpRows)) break;
                 $tmpStart += $tmpPerpage;
                 foreach ($tmpRows as $tmpR) {
-                    $myResult['canceledOrders'] += $tmpR->ct;
-                    $myResult['canceledPrices'] += $tmpR->op;
+                    $myResult['canceledOrders'] += 1;
+                    $myResult['canceledPrices'] += $tmpR->order_price;
                 }
             }
             $result[] = $myResult;
