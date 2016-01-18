@@ -173,6 +173,10 @@ class RelationshipOP extends \Gini\Controller\CLI
                 }
 
                 foreach ($items as $i=>$item) {
+                    // 如果商品价格是待询价, 当成无效订单处理
+                    if ($item['unit_price']<0) {
+                        continue;
+                    }
                     $product = isset($item['version']) ? a('product', [
                         'id'=> $item['id'],
                         'version'=> $item['version']
