@@ -190,13 +190,14 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             'token' => '',
         ];
         $type = $params['type'];
+        $value = $params['type_value'];
         $from = $params['from'];
         $to = $params['to'];
         if (!isset(self::$allowedTypes[$type])) {
             return $result;
         }
 
-        if (!$this->_allowShowDatas($type, self::$allowedTypes[$type])) {
+        if (!$this->_allowShowDatas($type, $value)) {
             return $result;
         }
 
