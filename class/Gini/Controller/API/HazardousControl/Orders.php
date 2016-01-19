@@ -269,7 +269,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
     {
         $tableName = self::_getOPTableName();
         $db = \Gini\DataBase::db();
-        $sql = "SELECT id,cas_no,product_type FROM :tablename WHERE :col=:value AND order_mtime BETWEEN :from AND :to GROUP BY cas_no ORDER BY product_type desc LIMIT {$start},{$perpage}";
+        $sql = "SELECT id,cas_no,product_type FROM :tablename WHERE :col=:value AND cas_no!='' AND order_mtime BETWEEN :from AND :to GROUP BY cas_no ORDER BY product_type desc LIMIT {$start},{$perpage}";
         $rows = $db->query(strtr($sql, [
             ':tablename' => $db->quoteIdent($tableName),
             ':col' => $db->quoteIdent($col),
@@ -281,7 +281,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $result = [];
         foreach ($rows as $row) {
             $tmpStart = 0;
-            $tmpPerpage = 10;
+            $tmpPerpage = 100;
             $tmpName = '';
             $tmpCount = 0;
             $tmpPrices = 0;
@@ -300,22 +300,18 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                     break;
                 }
                 $tmpStart += $tmpPerpage;
-                if ($row->cas_no) {
-                    foreach ($tmpRows as $tmpRow) {
-                        $tmpName = $tmpName ?: $tmpRow->product_name;
-                        $tmpCount = $this->_computeSum($tmpCount, $tmpRow->product_package, $tmpRow->product_quantity);
-                        $tmpPrices += $tmpRow->product_total_price;
-                    }
+                foreach ($tmpRows as $tmpRow) {
+                    $tmpName = $tmpName ?: $tmpRow->product_name;
+                    $tmpCount = $this->_computeSum($tmpCount, $tmpRow->product_package, $tmpRow->product_quantity);
+                    $tmpPrices += $tmpRow->product_total_price;
                 }
             }
-            if ($tmpName) {
-                $result[] = [
-                    'name' => $tmpName,
-                    'quantity' => $tmpCount,
-                    'price' => round($tmpPrices, 2),
-                    'type' => $row->product_type
-                ];
-            }
+            $result[] = [
+                'name' => $tmpName,
+                'quantity' => $tmpCount,
+                'price' => round($tmpPrices, 2),
+                'type' => $row->product_type
+            ];
         }
         return $result;
     }

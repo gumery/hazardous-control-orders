@@ -184,6 +184,13 @@ class RelationshipOP extends \Gini\Controller\CLI
                     // 商品会不会不存在？
                     if (!$product->id) continue;
                     $myType = $this->_getProductType($product->type, $product->rgt_type, $product->cas_no);
+                    if (!in_array($myType, [
+                        'hazardous',
+                        'drug_precursor',
+                        'highly_toxic'
+                    ])) {
+                        continue;
+                    }
                     if (!$myType) continue;
                     $values[] = '(' . implode(',',[
                         // orderid
