@@ -162,7 +162,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 'type'=> $type,
                 'value'=> $row->$groupBy,
                 'title'=> $title,
-                'data' => !$this->_allowShowDatas($type, $row->product_type) ? [] : $this->_getProducts($groupBy, $row->$groupBy, 0, 5, $from, $to, $justHazardous),
+                'data' => !$this->_allowShowDatas($type, $row->product_type) ? [] : $this->_getProducts($groupBy, $row->$groupBy, 0, 5, $from, $to),
                 'totalOrders' => $myValid[0],
                 'totalPrices' => $myValid[1],
                 'transferredOrders' => $myTransferred[0],
@@ -301,7 +301,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         return $result;
     }
 
-    private function _getProducts($col, $value, $start = 0, $perpage = 5, $from=null, $to=null, $justHazardous=false)
+    private function _getProducts($col, $value, $start = 0, $perpage = 5, $from=null, $to=null, $justHazardous=true)
     {
         $tableName = self::_getOPTableName();
         $db = \Gini\DataBase::db();
