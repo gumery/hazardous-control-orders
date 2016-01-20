@@ -222,6 +222,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $value = $params['type_value'];
         $from = $params['from'];
         $to = $params['to'];
+        $showAllProducts = $params['show_all'] ?: false;
         if (!isset(self::$allowedTypes[$type])) {
             return $result;
         }
@@ -235,7 +236,12 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $tableName = self::_getOPTableName();
         $token = md5(J($params));
 
-        $sql = 'SELECT COUNT(*) FROM :tablename WHERE :col=:value AND order_mtime BETWEEN :from AND :to GROUP BY cas_no';
+        if (!$showAllProducts) {
+            $sql = 'SELECT COUNT(*) FROM :tablename WHERE :col=:value AND product_type IN (\'hazardous\', \'drug_precursor\', \'highly_toxic\') AND order_mtime BETWEEN :from AND :to GROUP BY cas_no';
+        }
+        else {
+            $sql = 'SELECT COUNT(*) FROM :tablename WHERE :col=:value AND order_mtime BETWEEN :from AND :to GROUP BY cas_no';
+        }
         $total = $db->query(strtr($sql, [
             ':tablename' => $db->quoteIdent($tableName),
             ':col' => $db->quoteIdent(self::$allowedTypes[$type]),
@@ -287,9 +293,10 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $value = $params['type_value'];
         $from = $params['from'];
         $to = $params['to'];
+        $showAllProducts = $params['show_all'] ?: false;
         list($from, $to) = $this->_challengeFromTo($from, $to);
 
-        $result = $this->_getProducts($type, $value, $start, $perpage, $from, $to);
+        $result = $this->_getProducts($type, $value, $start, $perpage, $from, $to, !$showAllProducts);
 
         return $result;
     }
