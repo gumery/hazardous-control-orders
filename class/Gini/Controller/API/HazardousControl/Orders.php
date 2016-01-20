@@ -362,7 +362,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         // if ($type!='type') {
         //     return false;
         // }
-        if (!in_array($productType, [
+        if ($type=='type' && !in_array($productType, [
             'hazardous',
             'drug_precursor',
             'highly_toxic'
