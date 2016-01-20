@@ -175,7 +175,24 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             $result[] = $myResult;
         }
 
-        return $result;
+        $totalValid = $this->_getTotalValidInfo($db, $tableName, $from, $to, $justHazardous);
+        $totalTransferred = $this->_getTotalTransferredInfo($db, $tableName, $from, $to, $justHazardous);
+        $totalPaid = $this->_getTotalPaidInfo($db, $tableName, $from, $to, $justHazardous);
+        $totalCanceled = $this->_getTotalCanceledInfo($db, $tableName, $from, $to, $justHazardous);
+
+        $data = [
+            'totalOrders'=> $totalValid[0],
+            'totalPrices'=> $totalValid[1],
+            'transferredOrders'=> $totalTransferred[0],
+            'transferredPrices'=> $totalTransferred[1],
+            'paidOrders'=> $totalPaid[0],
+            'paidPrices'=> $totalPaid[1],
+            'canceledOrders'=> $totalCanceled[0],
+            'canceledPrices'=> $totalCanceled[1],
+            'data'=> $result
+        ];
+
+        return $data;
     }
 
     /**
@@ -499,6 +516,24 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         return [$row->ct?:0, $row->op?:0];
     }
 
+    // 求全部有效总数信息
+    private function _getTotalValidInfo($db, $tableName, $from, $to, $justHazardous=false)
+    {
+        if ($justHazardous) {
+            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE product_type IN ('hazardous', 'drug_precursor', 'highly_toxic') AND order_mtime BETWEEN :from AND :to AND order_status!=:statuscanceled GROUP BY order_id) T1";
+        }
+        else {
+            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE order_mtime BETWEEN :from AND :to AND order_status!=:statuscanceled GROUP BY order_id) T1";
+        }
+        $row = $db->query(strtr($sql, [
+            ':tablename' => $db->quoteIdent($tableName),
+            ':statuscanceled' => $db->quote(\Gini\ORM\Order::STATUS_CANCELED),
+            ':from'=> $db->quote($from),
+            ':to'=> $db->quote($to)
+        ]))->row();
+        return [$row->ct?:0, $row->op?:0];
+    }
+
     // 求已付款总数信息
     private function _getTransferredInfo($db, $tableName, $groupBy, $row, $from, $to, $justHazardous=false)
     {
@@ -512,6 +547,24 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             ':tablename' => $db->quoteIdent($tableName),
             ':groupby' => $db->quoteIdent($groupBy),
             ':groupbyvalue' => $db->quote($row->$groupBy),
+            ':statustransferred' => $db->quote(\Gini\ORM\Order::STATUS_TRANSFERRED),
+            ':from'=> $db->quote($from),
+            ':to'=> $db->quote($to)
+        ]))->row();
+        return [$row->ct?:0, $row->op?:0];
+    }
+
+    // 求已付款总数信息
+    private function _getTotalTransferredInfo($db, $tableName, $from, $to, $justHazardous=false)
+    {
+        if ($justHazardous) {
+            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE product_type IN ('hazardous', 'drug_precursor', 'highly_toxic') AND order_mtime BETWEEN :from AND :to AND order_status=:statustransferred GROUP BY order_id) T1";
+        }
+        else {
+            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE order_mtime BETWEEN :from AND :to AND order_status=:statustransferred GROUP BY order_id) T1";
+        }
+        $row = $db->query(strtr($sql, [
+            ':tablename' => $db->quoteIdent($tableName),
             ':statustransferred' => $db->quote(\Gini\ORM\Order::STATUS_TRANSFERRED),
             ':from'=> $db->quote($from),
             ':to'=> $db->quote($to)
@@ -539,6 +592,24 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         return [$row->ct?:0, $row->op?:0];
     }
 
+    // 求已结算总数信息
+    private function _getTotalPaidInfo($db, $tableName, $from, $to, $justHazardous=false)
+    {
+        if ($justHazardous) {
+            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE product_type IN ('hazardous', 'drug_precursor', 'highly_toxic') AND order_mtime BETWEEN :from AND :to AND order_status=:statuspaid GROUP BY order_id) T1";
+        }
+        else {
+            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE order_mtime BETWEEN :from AND :to AND order_status=:statuspaid GROUP BY order_id) T1";
+        }
+        $row = $db->query(strtr($sql, [
+            ':tablename' => $db->quoteIdent($tableName),
+            ':statuspaid' => $db->quote(\Gini\ORM\Order::STATUS_PAID),
+            ':from'=> $db->quote($from),
+            ':to'=> $db->quote($to)
+        ]))->row();
+        return [$row->ct?:0, $row->op?:0];
+    }
+
     // 求已取消总数信息
     private function _getCanceledInfo($db, $tableName, $groupBy, $row, $from, $to, $justHazardous=false)
     {
@@ -552,6 +623,24 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             ':tablename' => $db->quoteIdent($tableName),
             ':groupby' => $db->quoteIdent($groupBy),
             ':groupbyvalue' => $db->quote($row->$groupBy),
+            ':statuscanceled' => $db->quote(\Gini\ORM\Order::STATUS_CANCELED),
+            ':from'=> $db->quote($from),
+            ':to'=> $db->quote($to)
+        ]))->row();
+        return [$row->ct?:0, $row->op?:0];
+    }
+
+    // 求已取消总数信息
+    private function _getTotalCanceledInfo($db, $tableName, $from, $to, $justHazardous=false)
+    {
+        if ($justHazardous) {
+            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE product_type IN ('hazardous', 'drug_precursor', 'highly_toxic') AND order_mtime BETWEEN :from AND :to AND order_status=:statuscanceled GROUP BY order_id) T1";
+        }
+        else {
+            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE order_mtime BETWEEN :from AND :to AND order_status=:statuscanceled GROUP BY order_id) T1";
+        }
+        $row = $db->query(strtr($sql, [
+            ':tablename' => $db->quoteIdent($tableName),
             ':statuscanceled' => $db->quote(\Gini\ORM\Order::STATUS_CANCELED),
             ':from'=> $db->quote($from),
             ':to'=> $db->quote($to)
