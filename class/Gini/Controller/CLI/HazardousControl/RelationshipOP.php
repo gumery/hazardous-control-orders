@@ -104,6 +104,12 @@ class RelationshipOP extends \Gini\Controller\CLI
             '_MIDX_ORDER_MTIME' => [
                 'fields' => ['order_mtime'],
             ],
+            '_MIDX_PRODUCT_NAME' => [
+                'fields' => ['product_name'],
+            ],
+            '_MIDX_PRODUCT_CAS' => [
+                'fields' => ['cas_no'],
+            ],
         ],
     ];
 

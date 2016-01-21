@@ -66,6 +66,12 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         if (!empty($params['allowed_product_types']) && is_array($params['allowed_product_types'])) {
             $newParams['conditions']['product_types'] = $params['allowed_product_types'];
         }
+        if (isset($params['q']) && trim($params['q'])!=='') {
+            $qCondition = $this->getQCondition(trim($params['q']), $type);
+            if ($qCondition) {
+                $newParams['conditions']['q'] = $qCondition;
+            }
+        }
 
         $token = md5(J($params));
         $params = $newParams;
@@ -78,6 +84,9 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         }
         if (isset($params['conditions']['product_types'])) {
             $this->where('product_type', 'in', $params['conditions']['product_types']);
+        }
+        if (isset($params['conditions']['q'])) {
+            $this->where($params['conditions']['q']);
         }
         $sql = $this->groupBy(self::$allowedTypes[$type])->getSQL();
         $total = $db->query($sql)->count();
@@ -142,6 +151,9 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         }
         if (isset($params['conditions']['from']) && isset($params['conditions']['to'])) {
             $this->where('order_mtime', 'between', $params['conditions']['from'], $params['conditions']['to']);
+        }
+        if (isset($params['conditions']['q'])) {
+            $this->where($params['conditions']['q']);
         }
         $sql = $this->groupBy($groupBy)->limit($start, $perpage)->getSQL();
         $rows = $db->query($sql)->rows();
@@ -249,6 +261,12 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         if (!empty($params['allowed_product_types']) && is_array($params['allowed_product_types'])) {
             $newParams['conditions']['product_types'] = $params['allowed_product_types'];
         }
+        if (isset($params['q']) && trim($params['q'])!=='') {
+            $qCondition = $this->getQCondition(trim($params['q']), $type);
+            if ($qCondition) {
+                $newParams['conditions']['q'] = $qCondition;
+            }
+        }
 
         $token = md5(J($params));
         $params = $newParams;
@@ -263,6 +281,9 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         }
         if (isset($params['conditions']['product_types'])) {
             $this->where('product_type', 'in', $params['conditions']['product_types']);
+        }
+        if (isset($params['conditions']['q'])) {
+            $this->where($params['conditions']['q']);
         }
 
         $sql = $this->groupBy('cas_no')->getSQL();
@@ -326,6 +347,9 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         if (isset($conditions['from']) && isset($conditions['to'])) {
             $this->where('order_mtime', 'between', $conditions['from'], $conditions['to']);
         }
+        if (isset($conditions['q'])) {
+            $this->where($conditions['q']);
+        }
         $sql = $this->groupBy('cas_no')->orderBy([['product_type', 'desc']])->limit($start, $perpage)->getSQL();
         $rows = $db->query($sql)->rows();
 
@@ -346,6 +370,9 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 }
                 if (isset($conditions['from']) && isset($conditions['to'])) {
                     $this->where('order_mtime', 'between', $conditions['from'], $conditions['to']);
+                }
+                if (isset($conditions['q'])) {
+                    $this->where($conditions['q']);
                 }
                 $sql = $this->limit($tmpStart, $tmpPerpage)->getSQL();
                 $tmpRows = $db->query($sql)->rows();
@@ -536,6 +563,9 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         if (isset($conditions['from']) && isset($conditions['to'])) {
             $this->where('order_mtime', 'between', $conditions['from'], $conditions['to']);
         }
+        if (isset($conditions['q'])) {
+            $this->where($conditions['q']);
+        }
         if (!is_null($col)) {
             $this->where($col, '=', $value);
         }
@@ -667,5 +697,47 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
     private function getSQL()
     {
         return $this->currentSQL;
+    }
+
+    private function getQCondition($q, $type=null)
+    {
+        $q = trim($q);
+        if ($q==='') return;
+        $types = [
+            'group'=> [
+                'product_name',
+                'group_name',
+            ],
+            'vendor'=> [
+                'product_name',
+                'vendor_name'
+            ],
+            'type'=> [
+                'product_name',
+                'group_name',
+                'vendor_name'
+            ],
+        ];
+        if (!in_array($type, array_keys($types))) {
+            return;
+        }
+        $pattern = '/(?:\d{2,7})-(?:\d{2})-(?:\d)/';
+        if (preg_match($pattern, $q, $matches)) {
+            $casNO = $matches[0];
+            $q = str_replace($casNO, '', $q);
+            $q = str_replace('/\s+/', ' ', $q);
+        }
+        $conditions = [];
+        if ($q!=='') {
+            $q = "%{$q}%";
+            foreach ($types[$type] as $key) {
+                $conditions[] = [$key, 'like', $q];
+            }
+        }
+        if ($casNO) {
+            $conditions[] = ['cas_no', '=', $casNO];
+        }
+
+        return $conditions;
     }
 }
