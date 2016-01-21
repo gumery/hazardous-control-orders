@@ -48,30 +48,38 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $type = $params['type'];
         $from = $params['from'];
         $to = $params['to'];
-        $justHazardous = !!$params['just_hazardous'] ?: false;
         if (!isset(self::$allowedTypes[$type])) {
             return $result;
         }
-        list($from, $to) = $this->_challengeFromTo($from, $to);
+
+        $newParams = [
+            'type'=> $type,
+            'conditions'=> []
+        ];
+
+        $challenged = $this->_challengeFromTo($from, $to);
+        if ($challenged) {
+            list($from, $to) = $challenged;
+            $newParams['conditions']['from'] = $from;
+            $newParams['conditions']['to'] = $to;
+        }
+        if (!empty($params['allowed_product_types']) && is_array($params['allowed_product_types'])) {
+            $newParams['conditions']['product_types'] = $params['allowed_product_types'];
+        }
+
+        $token = md5(J($params));
+        $params = $newParams;
 
         $db = \Gini\DataBase::db();
         $tableName = self::_getOPTableName();
-        $token = md5(J($params));
-        if ($justHazardous) {
-            //$sql = 'SELECT COUNT(*) FROM :tablename WHERE order_mtime BETWEEN :from AND :to AND product_type IN (\'hazardous\', \'drug_precursor\', \'highly_toxic\') GROUP BY :groupby';
-            $sql = $this->initSQL('SELECT COUNT(*) FROM ' . $db->quoteIdent($tableName))
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('product_type', 'in', ['hazardous', 'drug_precursor', 'highly_toxic'])
-                ->groupBy(self::$allowedTypes[$type])
-                ->getSQL();
+        $this->select('COUNT(*)', $tableName);
+        if (isset($params['conditions']['from']) && isset($params['conditions']['to'])) {
+            $this->where('order_mtime', 'between', $params['conditions']['from'], $params['conditions']['to']);
         }
-        else {
-            //$sql = 'SELECT COUNT(*) FROM :tablename WHERE order_mtime BETWEEN :from AND :to GROUP BY :groupby';
-            $sql = $this->initSQL('SELECT COUNT(*) FROM ' . $db->quoteIdent($tableName))
-                ->where('order_mtime', 'between', $from, $to)
-                ->groupBy(self::$allowedTypes[$type])
-                ->getSQL();
+        if (isset($params['conditions']['product_types'])) {
+            $this->where('product_type', 'in', $params['conditions']['product_types']);
         }
+        $sql = $this->groupBy(self::$allowedTypes[$type])->getSQL();
         $total = $db->query($sql)->count();
 
         $_SESSION[$token] = $params;
@@ -124,54 +132,41 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $perpage = min($perpage, 25);
 
         $type = $params['type'];
-        $from = $params['from'];
-        $to = $params['to'];
-        $justHazardous = !!$params['just_hazardous'] ?: false;
-        list($from, $to) = $this->_challengeFromTo($from, $to);
         $groupBy = self::$allowedTypes[$type];
+
         $tableName = self::_getOPTableName();
         $db = \Gini\DataBase::db();
-
-        if ($justHazardous) {
-            //$sql = "SELECT product_type, group_id, group_name, vendor_id, vendor_name FROM :tablename WHERE order_mtime BETWEEN :from AND :to AND product_type IN ('hazardous', 'drug_precursor', 'highly_toxic') GROUP BY :groupby LIMIT {$start},{$perpage}";
-            $sql = $this->initSQL('SELECT product_type, group_id, group_name, vendor_id, vendor_name FROM ' . $db->quoteIdent($tableName))
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('product_type', 'in', ['hazardous', 'drug_precursor', 'highly_toxic'])
-                ->groupBy($groupBy)
-                ->limit($start, $perpage)
-                ->getSQL();
+        $this->select('product_type, group_id, group_name, vendor_id, vendor_name', $tableName);
+        if (isset($params['conditions']['product_types'])) {
+            $this->where('product_type', 'in', $params['conditions']['product_types']);
         }
-        else {
-            //$sql = "SELECT product_type, group_id, group_name, vendor_id, vendor_name FROM :tablename WHERE order_mtime BETWEEN :from AND :to GROUP BY :groupby LIMIT {$start},{$perpage}";
-            $sql = $this->initSQL('SELECT product_type, group_id, group_name, vendor_id, vendor_name FROM ' . $db->quoteIdent($tableName))
-                ->where('order_mtime', 'between', $from, $to)
-                ->groupBy($groupBy)
-                ->limit($start, $perpage)
-                ->getSQL();
+        if (isset($params['conditions']['from']) && isset($params['conditions']['to'])) {
+            $this->where('order_mtime', 'between', $params['conditions']['from'], $params['conditions']['to']);
         }
+        $sql = $this->groupBy($groupBy)->limit($start, $perpage)->getSQL();
         $rows = $db->query($sql)->rows();
 
+        switch ($type) {
+        case 'type':
+            $titleCol = 'product_type';
+            break;
+        case 'group':
+            $titleCol = 'group_name';
+            break;
+        case 'vendor':
+            $titleCol = 'vendor_name';
+            break;
+        }
         foreach ($rows as $row) {
-            switch ($type) {
-            case 'type':
-                $title = $row->product_type;
-                break;
-            case 'group':
-                $title = $row->group_name;
-                break;
-            case 'vendor':
-                $title = $row->vendor_name;
-                break;
-            }
-            $myValid = $this->_getValidInfo($db, $tableName, $groupBy, $row, $from, $to, $justHazardous);
-            $myTransferred = $this->_getTransferredInfo($db, $tableName, $groupBy, $row, $from, $to, $justHazardous);
-            $myPaid = $this->_getPaidInfo($db, $tableName, $groupBy, $row, $from, $to, $justHazardous);
-            $myCanceled = $this->_getCanceledInfo($db, $tableName, $groupBy, $row, $from, $to, $justHazardous);
+            $myValid = $this->_getTotalInfo('valid', $params['conditions'], $groupBy, $row->$groupBy);
+            $myTransferred = $this->_getTotalInfo('transferred', $params['conditions'], $groupBy, $row->$groupBy);
+            $myPaid = $this->_getTotalInfo('paid', $params['conditions'], $groupBy, $row->$groupBy);
+            $myCanceled = $this->_getTotalInfo('canceled', $params['conditions'], $groupBy, $row->$groupBy);
             $myResult = [
                 'type'=> $type,
                 'value'=> $row->$groupBy,
-                'title'=> $title,
-                'data' => !$this->_allowShowDatas($type, $row->product_type) ? [] : $this->_getProducts($groupBy, $row->$groupBy, 0, 5, $from, $to),
+                'title'=> $row->$titleCol,
+                'data' => !$this->_allowShowDatas($type, $row->product_type) ? [] : $this->_getProducts($groupBy, $row->$groupBy, $params['conditions'], 0, 5),
                 'totalOrders' => $myValid[0],
                 'totalPrices' => $myValid[1],
                 'transferredOrders' => $myTransferred[0],
@@ -184,10 +179,10 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             $result[] = $myResult;
         }
 
-        $totalValid = $this->_getTotalValidInfo($db, $tableName, $from, $to, $justHazardous);
-        $totalTransferred = $this->_getTotalTransferredInfo($db, $tableName, $from, $to, $justHazardous);
-        $totalPaid = $this->_getTotalPaidInfo($db, $tableName, $from, $to, $justHazardous);
-        $totalCanceled = $this->_getTotalCanceledInfo($db, $tableName, $from, $to, $justHazardous);
+        $totalValid = $this->_getTotalInfo('valid', $params['conditions']);
+        $totalTransferred = $this->_getTotalInfo('transferred', $params['conditions']);
+        $totalPaid = $this->_getTotalInfo('paid', $params['conditions']);
+        $totalCanceled = $this->_getTotalInfo('canceled', $params['conditions']);
 
         $data = [
             'totalOrders'=> $totalValid[0],
@@ -231,7 +226,6 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $value = $params['type_value'];
         $from = $params['from'];
         $to = $params['to'];
-        $showAllProducts = $params['show_all'] ?: false;
         if (!isset(self::$allowedTypes[$type])) {
             return $result;
         }
@@ -240,28 +234,38 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             return $result;
         }
 
-        list($from, $to) = $this->_challengeFromTo($from, $to);
+        $newParams = [
+            'type'=> $type,
+            'type_value'=> $value,
+            'conditions'=> []
+        ];
+
+        $challenged = $this->_challengeFromTo($from, $to);
+        if ($challenged) {
+            list($from, $to) = $challenged;
+            $newParams['conditions']['from'] = $from;
+            $newParams['conditions']['to'] = $to;
+        }
+        if (!empty($params['allowed_product_types']) && is_array($params['allowed_product_types'])) {
+            $newParams['conditions']['product_types'] = $params['allowed_product_types'];
+        }
+
+        $token = md5(J($params));
+        $params = $newParams;
+
         $db = \Gini\DataBase::db();
         $tableName = self::_getOPTableName();
-        $token = md5(J($params));
 
-        if (!$showAllProducts) {
-            //$sql = 'SELECT COUNT(*) FROM :tablename WHERE :col=:value AND product_type IN (\'hazardous\', \'drug_precursor\', \'highly_toxic\') AND order_mtime BETWEEN :from AND :to GROUP BY cas_no';
-            $sql = $this->initSQL('SELECT COUNT(*) FROM ' . $db->quoteIdent($tableName))
-                ->where(self::$allowedTypes[$type], '=', $params['type_value'])
-                ->where('product_type', 'in', ['hazardous', 'drug_precursor', 'highly_toxic'])
-                ->where('order_mtime', 'between', $from, $to)
-                ->groupBy('cas_no')
-                ->getSQL();
+        $this->select('COUNT(*)', $tableName) 
+            ->where(self::$allowedTypes[$type], '=', $value);
+        if (isset($params['conditions']['from']) && isset($params['conditions']['to'])) {
+            $this->where('order_mtime', 'between', $params['conditions']['from'], $params['conditions']['to']);
         }
-        else {
-            $sql = 'SELECT COUNT(*) FROM :tablename WHERE :col=:value AND order_mtime BETWEEN :from AND :to GROUP BY cas_no';
-            $sql = $this->initSQL('SELECT COUNT(*) FROM ' . $db->quoteIdent($tableName))
-                ->where(self::$allowedTypes[$type], '=', $params['type_value'])
-                ->where('order_mtime', 'between', $from, $to)
-                ->groupBy('cas_no')
-                ->getSQL();
+        if (isset($params['conditions']['product_types'])) {
+            $this->where('product_type', 'in', $params['conditions']['product_types']);
         }
+
+        $sql = $this->groupBy('cas_no')->getSQL();
         $total = $db->query($sql)->count();
 
         $_SESSION[$token] = $params;
@@ -305,43 +309,24 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $type = $params['type'];
         $type = self::$allowedTypes[$type];
         $value = $params['type_value'];
-        $from = $params['from'];
-        $to = $params['to'];
-        $showAllProducts = $params['show_all'] ?: false;
-        list($from, $to) = $this->_challengeFromTo($from, $to);
 
-        $result = $this->_getProducts($type, $value, $start, $perpage, $from, $to, !$showAllProducts);
+        $result = $this->_getProducts($type, $value, $params['conditions'], $start, $perpage);
 
         return $result;
     }
 
-    private function _getProducts($col, $value, $start = 0, $perpage = 5, $from=null, $to=null, $justHazardous=true)
+    private function _getProducts($col, $value, $conditions, $start = 0, $perpage = 5)
     {
         $tableName = self::_getOPTableName();
         $db = \Gini\DataBase::db();
-        if ($justHazardous) {
-            //$sql = "SELECT id,cas_no,product_type FROM :tablename WHERE :col=:value AND cas_no!='' AND order_mtime BETWEEN :from AND :to AND product_type IN ('hazardous', 'drug_precursor', 'highly_toxic') GROUP BY cas_no ORDER BY product_type desc LIMIT {$start},{$perpage}";
-            $sql = $this->initSQL('SELECT id,cas_no,product_type FROM ' . $db->quoteIdent($tableName))
-                ->where($col, '=', $value)
-                ->where('cas_no', '!=', '')
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('product_type', 'in', ['hazardous', 'drug_precursor', 'highly_toxic'])
-                ->groupBy('cas_no')
-                ->orderBy([['product_type', 'desc']])
-                ->limit($start, $perpage)
-                ->getSQL();
+        $this->select('id,cas_no,product_type', $tableName)->where('cas_no', '!=', '')->where($col, '=', $value);
+        if (isset($conditions['product_types'])) {
+            $this->where('product_type', 'in', $conditions['product_types']);
         }
-        else {
-            //$sql = "SELECT id,cas_no,product_type FROM :tablename WHERE :col=:value AND cas_no!='' AND order_mtime BETWEEN :from AND :to GROUP BY cas_no ORDER BY product_type desc LIMIT {$start},{$perpage}";
-            $sql = $this->initSQL('SELECT id,cas_no,product_type FROM ' . $db->quoteIdent($tableName))
-                ->where($col, '=', $value)
-                ->where('cas_no', '!=', '')
-                ->where('order_mtime', 'between', $from, $to)
-                ->groupBy('cas_no')
-                ->orderBy([['product_type', 'desc']])
-                ->limit($start, $perpage)
-                ->getSQL();
+        if (isset($conditions['from']) && isset($conditions['to'])) {
+            $this->where('order_mtime', 'between', $conditions['from'], $conditions['to']);
         }
+        $sql = $this->groupBy('cas_no')->orderBy([['product_type', 'desc']])->limit($start, $perpage)->getSQL();
         $rows = $db->query($sql)->rows();
 
         $result = [];
@@ -352,27 +337,17 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             $tmpCount = 0;
             $tmpPrices = 0;
             while (true) {
-                if ($justHazardous) {
-                    //$sql = "SELECT product_name,product_package,product_quantity,product_total_price FROM :tablename WHERE order_mtime BETWEEN :from AND :to AND product_type IN ('hazardous', 'drug_precursor', 'highly_toxic') AND :col=:value AND cas_no=:casno AND order_status!=:statuscanceled  LIMIT {$tmpStart},{$tmpPerpage}";
-                    $sql = $this->initSQL('SELECT product_name,product_package,product_quantity,product_total_price FROM ' . $db->quoteIdent($tableName))
-                        ->where('order_mtime', 'between', $from, $to)
-                        ->where('product_type', 'in', ['hazardous', 'drug_precursor', 'highly_toxic'])
-                        ->where($col, '=', $value)
-                        ->where('cas_no', '=', $row->cas_no)
-                        ->where('order_status', '!=', \Gini\ORM\Order::STATUS_CANCELED)
-                        ->limit($tmpStart, $tmpPerpage)
-                        ->getSQL();
+                $this->select('product_name,product_package,product_quantity,product_total_price', $tableName)
+                    ->where($col, '=', $value)
+                    ->where('cas_no', '=', $row->cas_no)
+                    ->where('order_status', '!=', \Gini\ORM\Order::STATUS_CANCELED);
+                if (isset($conditions['product_types'])) {
+                    $this->where('product_type', 'in', $conditions['product_types']);
                 }
-                else {
-                    //$sql = "SELECT product_name,product_package,product_quantity,product_total_price FROM :tablename WHERE order_mtime BETWEEN :from AND :to AND :col=:value AND cas_no=:casno AND order_status!=:statuscanceled  LIMIT {$tmpStart},{$tmpPerpage}";
-                    $sql = $this->initSQL('SELECT product_name,product_package,product_quantity,product_total_price FROM ' . $db->quoteIdent($tableName))
-                        ->where('order_mtime', 'between', $from, $to)
-                        ->where($col, '=', $value)
-                        ->where('cas_no', '=', $row->cas_no)
-                        ->where('order_status', '!=', \Gini\ORM\Order::STATUS_CANCELED)
-                        ->limit($tmpStart, $tmpPerpage)
-                        ->getSQL();
+                if (isset($conditions['from']) && isset($conditions['to'])) {
+                    $this->where('order_mtime', 'between', $conditions['from'], $conditions['to']);
                 }
+                $sql = $this->limit($tmpStart, $tmpPerpage)->getSQL();
                 $tmpRows = $db->query($sql)->rows();
                 if (!count($tmpRows)) {
                     break;
@@ -529,6 +504,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $to = @strtotime($to);
         $from = ($from && $from>=$min && $from<=$max) ? $from : $min;
         $to = ($to && $to>=$min && $to<=$max) ? $to : $max;
+        if ($from==$min && $to==$max) return;
         return [
             date('Y-m-d H:i:s', min($from, $to)),
             date('Y-m-d 23:59:59', max($from, $to))
@@ -536,225 +512,46 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
     }
 
     // 求有效总数信息
-    private function _getValidInfo($db, $tableName, $groupBy, $row, $from, $to, $justHazardous=false)
+    private function _getTotalInfo($type, $conditions, $col=null, $value=null)
     {
-        if ($justHazardous) {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE :groupby=:groupbyvalue AND product_type IN ('hazardous', 'drug_precursor', 'highly_toxic') AND order_mtime BETWEEN :from AND :to AND order_status!=:statuscanceled GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where($groupBy, '=', $row->$groupBy)
-                ->where('product_type', 'in', ['hazardous', 'drug_precursor', 'highly_toxic'])
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '!=', \Gini\ORM\Order::STATUS_CANCELED)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
+        $tableName = self::_getOPTableName();
+        $this->select('order_id,order_price', $tableName);
+        switch ($type) {
+        case 'valid':
+            $this->where('order_status', '!=', \Gini\ORM\Order::STATUS_CANCELED);
+            break;
+        case 'transferred':
+            $this->where('order_status', '=', \Gini\ORM\Order::STATUS_TRANSFERRED);
+            break;
+        case 'paid':
+            $this->where('order_status', '=', \Gini\ORM\Order::STATUS_PAID);
+            break;
+        case 'canceled':
+            $this->where('order_status', '=', \Gini\ORM\Order::STATUS_CANCELED);
+            break;
         }
-        else {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status!=:statuscanceled GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where($groupBy, '=', $row->$groupBy)
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '!=', \Gini\ORM\Order::STATUS_CANCELED)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
+        if (isset($conditions['product_types'])) {
+            $this->where('product_type', 'in', $conditions['product_types']);
         }
-        $row = $db->query($sql)->row();
-        return [$row->ct?:0, $row->op?:0];
-    }
-
-    // 求全部有效总数信息
-    private function _getTotalValidInfo($db, $tableName, $from, $to, $justHazardous=false)
-    {
-        if ($justHazardous) {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE product_type IN ('hazardous', 'drug_precursor', 'highly_toxic') AND order_mtime BETWEEN :from AND :to AND order_status!=:statuscanceled GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where('product_type', 'in', ['hazardous', 'drug_precursor', 'highly_toxic'])
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '!=', \Gini\ORM\Order::STATUS_CANCELED)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
+        if (isset($conditions['from']) && isset($conditions['to'])) {
+            $this->where('order_mtime', 'between', $conditions['from'], $conditions['to']);
         }
-        else {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE order_mtime BETWEEN :from AND :to AND order_status!=:statuscanceled GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '!=', \Gini\ORM\Order::STATUS_CANCELED)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
+        if (!is_null($col)) {
+            $this->where($col, '=', $value);
         }
-        $row = $db->query($sql)->row();
-        return [$row->ct?:0, $row->op?:0];
-    }
-
-    // 求已付款总数信息
-    private function _getTransferredInfo($db, $tableName, $groupBy, $row, $from, $to, $justHazardous=false)
-    {
-        if ($justHazardous) {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE :groupby=:groupbyvalue AND product_type IN ('hazardous', 'drug_precursor', 'highly_toxic') AND order_mtime BETWEEN :from AND :to AND order_status=:statustransferred GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where($groupBy, '=', $row->$groupBy)
-                ->where('product_type', 'in', ['hazardous', 'drug_precursor', 'highly_toxic'])
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '=', \Gini\ORM\Order::STATUS_TRANSFERRED)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
-        }
-        else {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statustransferred GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where($groupBy, '=', $row->$groupBy)
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '=', \Gini\ORM\Order::STATUS_TRANSFERRED)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
-        }
-        $row = $db->query($sql)->row();
-        return [$row->ct?:0, $row->op?:0];
-    }
-
-    // 求已付款总数信息
-    private function _getTotalTransferredInfo($db, $tableName, $from, $to, $justHazardous=false)
-    {
-        if ($justHazardous) {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE product_type IN ('hazardous', 'drug_precursor', 'highly_toxic') AND order_mtime BETWEEN :from AND :to AND order_status=:statustransferred GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where('product_type', 'in', ['hazardous', 'drug_precursor', 'highly_toxic'])
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '=', \Gini\ORM\Order::STATUS_TRANSFERRED)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
-        }
-        else {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE order_mtime BETWEEN :from AND :to AND order_status=:statustransferred GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '=', \Gini\ORM\Order::STATUS_TRANSFERRED)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
-        }
-        $row = $db->query($sql)->row();
-        return [$row->ct?:0, $row->op?:0];
-    }
-
-    // 求已结算总数信息
-    private function _getPaidInfo($db, $tableName, $groupBy, $row, $from, $to, $justHazardous=false)
-    {
-        if ($justHazardous) {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE :groupby=:groupbyvalue AND product_type IN ('hazardous', 'drug_precursor', 'highly_toxic') AND order_mtime BETWEEN :from AND :to AND order_status=:statuspaid GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where($groupBy, '=', $row->$groupBy)
-                ->where('product_type', 'in', ['hazardous', 'drug_precursor', 'highly_toxic'])
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '=', \Gini\ORM\Order::STATUS_PAID)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
-        }
-        else {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statuspaid GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where($groupBy, '=', $row->$groupBy)
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '=', \Gini\ORM\Order::STATUS_PAID)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
-        }
-        $row = $db->query($sql)->row();
-        return [$row->ct?:0, $row->op?:0];
-    }
-
-    // 求已结算总数信息
-    private function _getTotalPaidInfo($db, $tableName, $from, $to, $justHazardous=false)
-    {
-        if ($justHazardous) {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE product_type IN ('hazardous', 'drug_precursor', 'highly_toxic') AND order_mtime BETWEEN :from AND :to AND order_status=:statuspaid GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where('product_type', 'in', ['hazardous', 'drug_precursor', 'highly_toxic'])
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '=', \Gini\ORM\Order::STATUS_PAID)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
-        }
-        else {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE order_mtime BETWEEN :from AND :to AND order_status=:statuspaid GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '=', \Gini\ORM\Order::STATUS_PAID)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
-        }
-        $row = $db->query($sql)->row();
-        return [$row->ct?:0, $row->op?:0];
-    }
-
-    // 求已取消总数信息
-    private function _getCanceledInfo($db, $tableName, $groupBy, $row, $from, $to, $justHazardous=false)
-    {
-        if ($justHazardous) {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE :groupby=:groupbyvalue AND product_type IN ('hazardous', 'drug_precursor', 'highly_toxic') AND order_mtime BETWEEN :from AND :to AND order_status=:statuscanceled GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where($groupBy, '=', $row->$groupBy)
-                ->where('product_type', 'in', ['hazardous', 'drug_precursor', 'highly_toxic'])
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '=', \Gini\ORM\Order::STATUS_CANCELED)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
-        }
-        else {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE :groupby=:groupbyvalue AND order_mtime BETWEEN :from AND :to AND order_status=:statuscanceled GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where($groupBy, '=', $row->$groupBy)
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '=', \Gini\ORM\Order::STATUS_CANCELED)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
-        }
-        $row = $db->query($sql)->row();
-        return [$row->ct?:0, $row->op?:0];
-    }
-
-    // 求已取消总数信息
-    private function _getTotalCanceledInfo($db, $tableName, $from, $to, $justHazardous=false)
-    {
-        if ($justHazardous) {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE product_type IN ('hazardous', 'drug_precursor', 'highly_toxic') AND order_mtime BETWEEN :from AND :to AND order_status=:statuscanceled GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where('product_type', 'in', ['hazardous', 'drug_precursor', 'highly_toxic'])
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '=', \Gini\ORM\Order::STATUS_CANCELED)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
-        }
-        else {
-            //$sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM (SELECT order_id,order_price FROM :tablename WHERE order_mtime BETWEEN :from AND :to AND order_status=:statuscanceled GROUP BY order_id) T1";
-            $sql = $this->initSQL('SELECT order_id,order_price FROM ' . $db->quoteIdent($tableName))
-                ->where('order_mtime', 'between', $from, $to)
-                ->where('order_status', '=', \Gini\ORM\Order::STATUS_CANCELED)
-                ->groupBy('order_id')
-                ->getSQL();
-            $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
-        }
+        $sql = $this->groupBy('order_id')->getSQL();
+        $sql = "SELECT COUNT(order_id) AS ct, SUM(order_price) AS op FROM ({$sql}) T1";
+        $db = \Gini\Database::db();
         $row = $db->query($sql)->row();
         return [$row->ct?:0, $row->op?:0];
     }
 
     private $currentSQL = '';
     private $currentSQLHasWhere = false;
-    private function initSQL($sql)
+    private function select($cols, $tableName)
     {
+        $db = \Gini\Database::db();
+        $sql = "SELECT {$cols} FROM " . $db->quoteIdent($tableName);
         $this->currentSQL = $sql;
         $this->currentSQLHasWhere = false;
         return $this;
