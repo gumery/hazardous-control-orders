@@ -52,12 +52,16 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             return $result;
         }
 
+        $challenged = $this->_challengeFromTo($from, $to);
+        if ($challenged===false) {
+            return $result;
+        }
+
         $newParams = [
             'type'=> $type,
             'conditions'=> []
         ];
 
-        $challenged = $this->_challengeFromTo($from, $to);
         if ($challenged) {
             list($from, $to) = $challenged;
             $newParams['conditions']['from'] = $from;
@@ -169,6 +173,12 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             $titleCol = 'vendor_name';
             break;
         }
+        $productConditions = $params['conditions'];
+        $productConditions['product_types'] = [
+            'hazardous',
+            'drug_precursor',
+            'highly_toxic'
+        ];
         foreach ($rows as $row) {
             $myValid = $this->_getTotalInfo('valid', $params['conditions'], $groupBy, $row->$groupBy);
             $myTransferred = $this->_getTotalInfo('transferred', $params['conditions'], $groupBy, $row->$groupBy);
@@ -178,7 +188,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 'type'=> $type,
                 'value'=> $row->$groupBy,
                 'title'=> $row->$titleCol,
-                'data' => !$this->_allowShowDatas($type, $row->product_type) ? [] : $this->_getProducts($groupBy, $row->$groupBy, $params['conditions'], 0, 5),
+                'data' => !$this->_allowShowDatas($type, $row->product_type) ? [] : $this->_getProducts($groupBy, $row->$groupBy, $productConditions, 0, 5),
                 'totalOrders' => $myValid[0],
                 'totalPrices' => $myValid[1],
                 'transferredOrders' => $myTransferred[0],
@@ -246,13 +256,17 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             return $result;
         }
 
+        $challenged = $this->_challengeFromTo($from, $to);
+        if ($challenged===false) {
+            return $result;
+        }
+
         $newParams = [
             'type'=> $type,
             'type_value'=> $value,
             'conditions'=> []
         ];
 
-        $challenged = $this->_challengeFromTo($from, $to);
         if ($challenged) {
             list($from, $to) = $challenged;
             $newParams['conditions']['from'] = $from;
@@ -529,6 +543,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $max = time();
         $from = @strtotime($from);
         $to = @strtotime($to);
+        if ($from>=$max || $to>=$man) return false;
         $from = ($from && $from>=$min && $from<=$max) ? $from : $min;
         $to = ($to && $to>=$min && $to<=$max) ? $to : $max;
         if ($from==$min && $to==$max) return;
