@@ -543,7 +543,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         $max = time();
         $from = @strtotime($from);
         $to = @strtotime($to);
-        if ($from>=$max || $to>=$man) return false;
+        if ($from>=$max) return false;
         $from = ($from && $from>=$min && $from<=$max) ? $from : $min;
         $to = ($to && $to>=$min && $to<=$max) ? $to : $max;
         if ($from==$min && $to==$max) return;
