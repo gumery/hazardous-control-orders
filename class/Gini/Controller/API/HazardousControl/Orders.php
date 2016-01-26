@@ -400,14 +400,12 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                     $tmpPrices += $tmpRow->product_total_price;
                 }
             }
-            if ($tmpName) {
-                $result[] = [
-                    'name' => $tmpName,
-                    'quantity' => $tmpCount,
-                    'price' => round($tmpPrices, 2),
-                    'type' => $row->product_type
-                ];
-            }
+            $result[] = [
+                'name' => $tmpName,
+                'quantity' => $tmpCount,
+                'price' => round($tmpPrices, 2),
+                'type' => $row->product_type
+            ];
         }
         return $result;
     }

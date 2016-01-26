@@ -155,7 +155,7 @@ class RelationshipOP extends \Gini\Controller\CLI
         array_shift($keys);
         $keys = implode(',', $keys);
         while (true) {
-            $rows = those('order')->whose('mtime')->isGreaterThan($max)->orderBy('mtime', 'asc')->limit($start, $perpage);
+            $rows = those('order')->whose('mtime')->isGreaterThan($max)->andWhose('customized')->is(0)->orderBy('mtime', 'asc')->limit($start, $perpage);
             if (!count($rows)) break;
             $start += $perpage;
 
@@ -183,10 +183,7 @@ class RelationshipOP extends \Gini\Controller\CLI
                     if ($item['unit_price']<0) {
                         continue;
                     }
-                    $product = isset($item['version']) ? a('product', [
-                        'id'=> $item['id'],
-                        'version'=> $item['version']
-                    ]) : a('product', $item['id']);
+                    $product = a('product', $item['id']);
                     // 商品会不会不存在？
                     if (!$product->id) continue;
                     $myType = $this->_getProductType($product->type, $product->rgt_type, $product->cas_no);
@@ -203,7 +200,7 @@ class RelationshipOP extends \Gini\Controller\CLI
                         // producttype
                         $db->quote($myType),
                         // casno
-                        $db->quote($product->cas_no),
+                        $db->quote(trim($product->cas_no)),
                         // vendorid
                         $db->quote($row->vendor->id),
                         // vendorname
@@ -215,7 +212,7 @@ class RelationshipOP extends \Gini\Controller\CLI
                         // orderprice
                         $db->quote(round($row->price, 2)),
                         // product package
-                        $db->quote($product->package),
+                        $db->quote(trim($product->package)),
                         // product quantity
                         $db->quote($item['quantity']),
                         // product unit price
@@ -276,6 +273,143 @@ class RelationshipOP extends \Gini\Controller\CLI
         }
         return $name;
     }
+
+    public function actionInit()
+    {
+        $db = \Gini\Database::db();
+        $tableName = self::_getTableName();
+        $max = $db->query("SELECT max(order_mtime) FROM {$tableName}")->value() ?: 0;
+        $start = 0;
+        $perpage = 100;
+        $schema = self::$schema;
+        $keys = array_keys($schema['fields']);
+        array_shift($keys);
+        $keys = implode(',', $keys);
+        while (true) {
+            $rows = those('order')->whose('mtime')->isGreaterThan($max)->andWhose('customized')->is(0)->orderBy('mtime', 'asc')->limit($start, $perpage);
+            if (!count($rows)) break;
+            $start += $perpage;
+
+            $values = [];
+            foreach ($rows as $row) {
+                $items = (array) $row->items;
+
+                $qRowID = $db->quote($row->id);
+                $qRowMd5 = $db->quote($this->getMd5($row));
+                // 检测有没有历史数据
+                $hisCount = $db->query("SELECT COUNT(*) FROM {$tableName} WHERE order_id={$qRowID}")->value() ?: 0;
+                if ($hisCount) {
+                    // 检测历史数据是不是已经跟最新的数据不一致了
+                    // 如果不一致，需要删除重建
+                    // 如果一致，就不需要在重复添加了
+                    $query = $db->query("DELETE FROM {$tableName} WHERE order_id={$qRowID} AND order_md5!={$qRowMd5}");
+                    if (!$query || !$query->count()) {
+                        echo "\norder#{$row->id} 更新数据失败\n";
+                        continue;
+                    }
+                }
+
+                foreach ($items as $i=>$item) {
+                    // 如果商品价格是待询价, 当成无效订单处理
+                    if ($item['unit_price']<0) {
+                        continue;
+                    }
+                    $values[] = '(' . implode(',',[
+                        // orderid
+                        $db->quote($row->id),
+                        // orderctime
+                        $db->quote($row->mtime),
+                        // ordermd5
+                        $db->quote($this->getMd5($row)),
+                        // productid
+                        $db->quote($item['id']),
+                        // producttype
+                        $db->quote(''),
+                        // casno
+                        $db->quote(''),
+                        // vendorid
+                        $db->quote($row->vendor->id),
+                        // vendorname
+                        $db->quote($row->vendor->name),
+                        // groupid
+                        $db->quote($row->group->id),
+                        // groupname
+                        $db->quote($row->group->title),
+                        // orderprice
+                        $db->quote(round($row->price, 2)),
+                        // product package
+                        $db->quote(''),
+                        // product quantity
+                        $db->quote($item['quantity']),
+                        // product unit price
+                        $db->quote($item['unit_price']),
+                        // product total price
+                        $db->quote($item['price']),
+                        // order status
+                        $db->quote($row->status),
+                        // product name
+                        $db->quote(''),
+                    ]) . ')';
+                }
+            }
+            if (empty($values)) continue;
+            $values = implode(',', $values);
+            $db = \Gini\Database::db();
+            $sql = "INSERT INTO {$tableName}({$keys}) VALUES {$values};";
+            if ($db->query($sql)) {
+                echo '.';
+            }
+            else {
+                echo 'x';
+            }
+        }
+    }
+
+    /*
+    // 通过actionInit初始化第一版的数据，并将数据导入到hub_product的数据库，并在hub——product上执行actionRun这个方法
+    // 根据商品id完善商品信息
+    // 主要是因为rpc请求过多，build脚本执行超时频繁，所以，第一次商品信息的补充不用rpc的方式
+    public function actionRun()
+    {
+        $tableName = '_hazardous_control_order_product';
+        $start = 0;
+        $perpage = 10;
+        $db = \Gini\Database::db();
+
+        while (true) {
+            $sql = "select id,product_id from {$tableName} order by id desc limit {$start}, {$perpage}";
+            $rows = $db->query($sql)->rows();
+            if (!count($rows)) break;
+            $start += $perpage;
+            foreach ($rows as $row) {
+                $tmpID = $row->product_id;
+                $product = a('product', $tmpID);
+                $tmpType = $product->type;
+                if ($product->type=='chem_reagent') {
+                    $tmpType = [
+                        1=> 'chem_reagent',
+                        2=> 'hazardous',
+                        3=> 'drug_precursor',
+                    ][$product->rgt_type];
+                }
+                $tmpSQL = strtr("UPDATE _hazardous_control_order_product SET product_type=:ptype,cas_no=:cn,product_package=:package, product_name=:pname WHERE id={$row->id}", [
+                    ':ptype'=> $db->quote($tmpType),
+                    ':cn'=> $db->quote(trim($product->cas_no)),
+                    ':package'=> $db->quote($product->package),
+                    ':pname'=> $db->quote($product->name)
+                ]);
+                $bool = $db->query($tmpSQL);
+                if ($bool) {
+                    echo '.';
+                }
+                else {
+                    echo 'x';
+                }
+                //echo "{$row->id}: {$row->product_id} / {$row->product_type}\n";
+            }
+        }
+    }
+     */
 
     private function _getProductType($type, $subType=null, $cas=null)
     {
