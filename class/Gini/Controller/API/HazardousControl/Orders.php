@@ -354,7 +354,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
     {
         $tableName = self::_getOPTableName();
         $db = \Gini\DataBase::db();
-        $this->select('id,cas_no,product_type', $tableName)->where('cas_no', '!=', '')->where($col, '=', $value);
+        $this->select('id,cas_no,product_type', $tableName)->where('cas_no', '!=', '')->where($col, '=', $value)->where('order_status', '!=', \Gini\ORM\Order::STATUS_CANCELED);
         if (isset($conditions['product_types'])) {
             $this->where('product_type', 'in', $conditions['product_types']);
         }
