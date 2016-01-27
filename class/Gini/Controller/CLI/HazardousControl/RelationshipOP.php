@@ -439,8 +439,10 @@ class RelationshipOP extends \Gini\Controller\CLI
 
     private function filterWorkers($pid)
     {
+        return file_exists("/proc/{$pid}");
+        /*
         $ps = shell_exec("ps -p {$pid}");
-
         return count(explode("\n", $ps)) > 2;
+         */
     }
 }
