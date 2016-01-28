@@ -25,55 +25,55 @@ class RelationshipOP extends \Gini\Controller\CLI
             'order_id' => [
                 'type' => 'bigint',
             ],
-            'order_mtime'=> [
-                'type'=> 'datetime',
+            'order_mtime' => [
+                'type' => 'datetime',
             ],
-            'order_md5'=> [
-                'type'=> 'varchar(32)',
+            'order_md5' => [
+                'type' => 'varchar(32)',
             ],
             'product_id' => [
                 'type' => 'bigint',
             ],
             'product_type' => [
-                'type'=> 'varchar(50)'
+                'type' => 'varchar(50)',
             ],
-            'cas_no'=> [
-                'type'=> 'varchar(15)',
-                'null'=> true
+            'cas_no' => [
+                'type' => 'varchar(15)',
+                'null' => true,
             ],
             'vendor_id' => [
                 'type' => 'bigint',
             ],
-            'vendor_name'=> [
+            'vendor_name' => [
                 'type' => 'varchar(120)',
             ],
             'group_id' => [
                 'type' => 'bigint',
             ],
-            'group_name'=> [
+            'group_name' => [
                 'type' => 'varchar(120)',
             ],
-            'order_price'=> [
-                'type'=> 'double'
+            'order_price' => [
+                'type' => 'double',
             ],
-            'product_package'=> [
+            'product_package' => [
                 'type' => 'varchar(50)',
             ],
-            'product_quantity'=> [
+            'product_quantity' => [
                 'type' => 'double',
             ],
-            'product_unit_price'=> [
+            'product_unit_price' => [
                 'type' => 'double',
             ],
-            'product_total_price'=> [
+            'product_total_price' => [
                 'type' => 'double',
             ],
-            'order_status'=> [
-                'type'=> 'int',
+            'order_status' => [
+                'type' => 'int',
             ],
-            'product_name'=> [
-                'type'=> 'varchar(255)',
-            ]
+            'product_name' => [
+                'type' => 'varchar(255)',
+            ],
         ],
         'indexes' => [
             'PRIMARY' => [
@@ -121,8 +121,7 @@ class RelationshipOP extends \Gini\Controller\CLI
         $db->adjustTable($tableName, $schema);
         if ($db->query("DESC {$tableName}")) {
             echo "Prepare Table {$tableName}: Done\n";
-        }
-        else {
+        } else {
             echo "Prepare Table {$tableName}: Failed\n";
         }
     }
@@ -156,7 +155,9 @@ class RelationshipOP extends \Gini\Controller\CLI
         $keys = implode(',', $keys);
         while (true) {
             $rows = those('order')->whose('mtime')->isGreaterThan($max)->andWhose('customized')->is(0)->orderBy('mtime', 'asc')->limit($start, $perpage);
-            if (!count($rows)) break;
+            if (!count($rows)) {
+                break;
+            }
             $start += $perpage;
 
             $values = [];
@@ -178,18 +179,22 @@ class RelationshipOP extends \Gini\Controller\CLI
                     }
                 }
 
-                foreach ($items as $i=>$item) {
+                foreach ($items as $i => $item) {
                     // 如果商品价格是待询价, 当成无效订单处理
-                    if ($item['unit_price']<0) {
+                    if ($item['unit_price'] < 0) {
                         continue;
                     }
                     $product = a('product', $item['id']);
                     // 商品会不会不存在？
-                    if (!$product->id) continue;
+                    if (!$product->id) {
+                        continue;
+                    }
                     $myTypes = $this->_getProductTypes($product->type, $product->rgt_type, $product->cas_no);
-                    if (empty($myTypes)) continue;
+                    if (empty($myTypes)) {
+                        continue;
+                    }
                     foreach ($myTypes as $myType) {
-                        $values[] = '(' . implode(',',[
+                        $values[] = '('.implode(',', [
                             // orderid
                             $db->quote($row->id),
                             // orderctime
@@ -224,18 +229,19 @@ class RelationshipOP extends \Gini\Controller\CLI
                             $db->quote($row->status),
                             // product name
                             $db->quote($this->_getProductName($item['name'], $product->cas_no, $myType)),
-                        ]) . ')';
+                        ]).')';
                     }
                 }
             }
-            if (empty($values)) continue;
+            if (empty($values)) {
+                continue;
+            }
             $values = implode(',', $values);
             $db = \Gini\Database::db();
             $sql = "INSERT INTO {$tableName}({$keys}) VALUES {$values};";
             if ($db->query($sql)) {
                 echo '.';
-            }
-            else {
+            } else {
                 echo 'x';
             }
         }
@@ -244,35 +250,40 @@ class RelationshipOP extends \Gini\Controller\CLI
     private static $rpc;
     private static function _getRPC()
     {
-        if (self::$rpc) return self::$rpc;
+        if (self::$rpc) {
+            return self::$rpc;
+        }
         $config = \Gini\Config::get('hazardous-control-orders.rpc');
         $url = $config['url'];
         $rpc = \Gini\IoC::construct('\Gini\RPC', $url);
         self::$rpc = $rpc;
+
         return $rpc;
     }
 
     private static $data = [];
-    private function _getProductName($name, $cas=null, $type=null)
+    private function _getProductName($name, $cas = null, $type = null)
     {
-        if (!$cas) return $name;
+        if (!$cas) {
+            return $name;
+        }
         if (isset(self::$data[$cas])) {
             $data = self::$data[$cas];
-        }
-        else {
+        } else {
             $rpc = self::_getRPC();
-            self::$data[$cas] = $data = (array)$rpc->product->chem->getProduct($cas);
+            self::$data[$cas] = $data = (array) $rpc->product->chem->getProduct($cas);
         }
         if (empty($data)) {
             return $name;
         }
         if ($type) {
             foreach ($data as $d) {
-                if ($d['type']==$type) {
+                if ($d['type'] == $type) {
                     return $d['name'];
                 }
             }
         }
+
         return $name;
     }
 
@@ -289,7 +300,9 @@ class RelationshipOP extends \Gini\Controller\CLI
         $keys = implode(',', $keys);
         while (true) {
             $rows = those('order')->whose('mtime')->isGreaterThan($max)->andWhose('customized')->is(0)->orderBy('mtime', 'asc')->limit($start, $perpage);
-            if (!count($rows)) break;
+            if (!count($rows)) {
+                break;
+            }
             $start += $perpage;
 
             $values = [];
@@ -311,12 +324,12 @@ class RelationshipOP extends \Gini\Controller\CLI
                     }
                 }
 
-                foreach ($items as $i=>$item) {
+                foreach ($items as $i => $item) {
                     // 如果商品价格是待询价, 当成无效订单处理
-                    if ($item['unit_price']<0) {
+                    if ($item['unit_price'] < 0) {
                         continue;
                     }
-                    $values[] = '(' . implode(',',[
+                    $values[] = '('.implode(',', [
                         // orderid
                         $db->quote($row->id),
                         // orderctime
@@ -351,17 +364,18 @@ class RelationshipOP extends \Gini\Controller\CLI
                         $db->quote($row->status),
                         // product name
                         $db->quote(''),
-                    ]) . ')';
+                    ]).')';
                 }
             }
-            if (empty($values)) continue;
+            if (empty($values)) {
+                continue;
+            }
             $values = implode(',', $values);
             $db = \Gini\Database::db();
             $sql = "INSERT INTO {$tableName}({$keys}) VALUES {$values};";
             if ($db->query($sql)) {
                 echo '.';
-            }
-            else {
+            } else {
                 echo 'x';
             }
         }
@@ -413,34 +427,37 @@ class RelationshipOP extends \Gini\Controller\CLI
     }
      */
 
-    private function _getProductTypes($type, $subType=null, $cas=null)
+    private function _getProductTypes($type, $subType = null, $cas = null)
     {
         $result = [];
         if ($cas) {
             if (isset(self::$data[$cas])) {
                 $data = self::$data[$cas];
-            }
-            else {
+            } else {
                 $rpc = self::_getRPC();
                 self::$data[$cas] = $data = $rpc->product->chem->getProduct($cas);
             }
-            if (is_array($data)) foreach ($data as $d) {
-                $result[] = $d['type'];
+            if (is_array($data)) {
+                foreach ($data as $d) {
+                    $result[] = $d['type'];
+                }
             }
-            if (!empty($result)) return $result;
+            if (!empty($result)) {
+                return $result;
+            }
         }
         $types = [
-            \Gini\ORM\Product::RGT_TYPE_NORMAL=> 'chem_reagent',
-            \Gini\ORM\Product::RGT_TYPE_HAZARDOUS=> 'hazardous',
-            \Gini\ORM\Product::RGT_TYPE_DRUG_PRECURSOR=> 'drug_precursor',
-            \Gini\ORM\Product::RGT_TYPE_HIGHLY_TOXIC=> 'highly_toxic'
+            \Gini\ORM\Product::RGT_TYPE_NORMAL => 'chem_reagent',
+            \Gini\ORM\Product::RGT_TYPE_HAZARDOUS => 'hazardous',
+            \Gini\ORM\Product::RGT_TYPE_DRUG_PRECURSOR => 'drug_precursor',
+            \Gini\ORM\Product::RGT_TYPE_HIGHLY_TOXIC => 'highly_toxic',
         ];
         if ($subType && isset($types[$subType])) {
             $result[] = $types[$subType];
-        }
-        else {
+        } else {
             $result[] = $type;
         }
+
         return $result;
     }
 
@@ -451,5 +468,99 @@ class RelationshipOP extends \Gini\Controller\CLI
         $ps = shell_exec("ps -p {$pid}");
         return count(explode("\n", $ps)) > 2;
          */
+    }
+    public function actionResetPType()
+    {
+        $dba = \Gini\Database::db('chemdb');
+        $dbb = \Gini\Database::db();
+        $tableName = '_hazardous_control_order_product';
+        $start = 0;
+        $perpage = 25;
+        $schema = self::$schema;
+        $keys = array_keys($schema['fields']);
+        array_shift($keys);
+        $keys = implode(',', $keys);
+        while (true) {
+            $sql = "SELECT cas_no,name,GROUP_CONCAT(distinct type) as ptype FROM product GROUP BY cas_no LIMIT {$start}, {$perpage}";
+            $rows = $dba->query($sql)->rows();
+            if (!count($rows)) {
+                break;
+            }
+            $start += $perpage;
+            foreach ($rows as $row) {
+                $type = $row->ptype;
+                $types = explode(',', $type);
+                $cas = $row->cas_no;
+                if (count($types) > 1) {
+                    $iSQL = strtr("SELECT * FROM {$tableName} where cas_no=:cno", [
+                    ':cno' => $dbb->quote($row->cas_no),
+                ]);
+                    $tmpRows = $dbb->query($iSQL)->rows;
+                    if (!$tmpRows || !count($tmpRows)) {
+                        continue;
+                    }
+                    foreach ($tmpRows as $tmpRow) {
+                        $tmpValues = [];
+                        foreach ($types as $type) {
+                            $tmpValues[] = '('.implode(',', [
+                            // orderid
+                            $dbb->quote($tmpRow->order_id),
+                            // orderctime
+                            $dbb->quote($tmpRow->order_mtime),
+                            // ordermd5
+                            $dbb->quote($tmpRow->order_md5),
+                            // productid
+                            $dbb->quote($tmpRow->product_id),
+                            // producttype
+                            $dbb->quote($type),
+                            // casno
+                            $dbb->quote($tmpRow->cas_no),
+                            // vendorid
+                            $dbb->quote($tmpRow->vendor_id),
+                            // vendorname
+                            $dbb->quote($tmpRow->vendor_name),
+                            // groupid
+                            $dbb->quote($tmpRow->group_id),
+                            // groupname
+                            $dbb->quote($tmpRow->group_title),
+                            // orderprice
+                            $dbb->quote(round($tmpRow->order_price, 2)),
+                            // product package
+                            $dbb->quote($tmpRow->product_package),
+                            // product quantity
+                            $dbb->quote($tmpRow->product_quantity),
+                            // product unit price
+                            $dbb->quote($tmpRow->product_unit_price),
+                            // product total price
+                            $dbb->quote($tmpRow->product_total_price),
+                            // order status
+                            $dbb->quote($tmpRow->status),
+                            // product name
+                            $dbb->quote($tmpRow->product_name),
+                        ]).')';
+                        }
+                        $tmpValues = implode(',', $tmpValues);
+                        $tmpSQL = "INSERT INTO {$tableName}({$keys}) VALUES {$tmpValues};";
+                        echo "\n\t{$tmpSQL}\n";
+                        $dbb->query($tmpSQL);
+                        $tmpSQL = "DELETE FROM {$tableName} WHERE id={$tmpRow->id}";
+                        echo "\n\t{$tmpSQL}\n";
+                        $dbb->query($tmpSQL);
+                        echo '.';
+                    }
+                } else {
+                    $iSQL = strtr("UPDATE {$tableName} SET product_name=:pname,product_type=:ptype WHERE cas_no=:cno", [
+                    ':pname' => $dbb->quote($row->name),
+                    ':ptype' => $dbb->quote($type),
+                    ':cno' => $dbb->quote($row->cas_no),
+                ]);
+                    if ($dbb->query($iSQL)) {
+                        echo '.';
+                    } else {
+                        echo 'x';
+                    }
+                }
+            }
+        }
     }
 }
