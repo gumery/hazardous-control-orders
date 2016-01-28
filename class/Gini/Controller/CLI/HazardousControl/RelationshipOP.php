@@ -186,44 +186,46 @@ class RelationshipOP extends \Gini\Controller\CLI
                     $product = a('product', $item['id']);
                     // 商品会不会不存在？
                     if (!$product->id) continue;
-                    $myType = $this->_getProductType($product->type, $product->rgt_type, $product->cas_no);
-                    if (!$myType) continue;
-                    $values[] = '(' . implode(',',[
-                        // orderid
-                        $db->quote($row->id),
-                        // orderctime
-                        $db->quote($row->mtime),
-                        // ordermd5
-                        $db->quote($this->getMd5($row)),
-                        // productid
-                        $db->quote($product->id),
-                        // producttype
-                        $db->quote($myType),
-                        // casno
-                        $db->quote(trim($product->cas_no)),
-                        // vendorid
-                        $db->quote($row->vendor->id),
-                        // vendorname
-                        $db->quote($row->vendor->name),
-                        // groupid
-                        $db->quote($row->group->id),
-                        // groupname
-                        $db->quote($row->group->title),
-                        // orderprice
-                        $db->quote(round($row->price, 2)),
-                        // product package
-                        $db->quote(trim($product->package)),
-                        // product quantity
-                        $db->quote($item['quantity']),
-                        // product unit price
-                        $db->quote($item['unit_price']),
-                        // product total price
-                        $db->quote($item['price']),
-                        // order status
-                        $db->quote($row->status),
-                        // product name
-                        $db->quote($this->_getProductName($item['name'], $product->cas_no, $myType)),
-                    ]) . ')';
+                    $myTypes = $this->_getProductTypes($product->type, $product->rgt_type, $product->cas_no);
+                    if (empty($myTypes)) continue;
+                    foreach ($myTypes as $myType) {
+                        $values[] = '(' . implode(',',[
+                            // orderid
+                            $db->quote($row->id),
+                            // orderctime
+                            $db->quote($row->mtime),
+                            // ordermd5
+                            $db->quote($this->getMd5($row)),
+                            // productid
+                            $db->quote($product->id),
+                            // producttype
+                            $db->quote($myType),
+                            // casno
+                            $db->quote(trim($product->cas_no)),
+                            // vendorid
+                            $db->quote($row->vendor->id),
+                            // vendorname
+                            $db->quote($row->vendor->name),
+                            // groupid
+                            $db->quote($row->group->id),
+                            // groupname
+                            $db->quote($row->group->title),
+                            // orderprice
+                            $db->quote(round($row->price, 2)),
+                            // product package
+                            $db->quote(trim($product->package)),
+                            // product quantity
+                            $db->quote($item['quantity']),
+                            // product unit price
+                            $db->quote($item['unit_price']),
+                            // product total price
+                            $db->quote($item['price']),
+                            // order status
+                            $db->quote($row->status),
+                            // product name
+                            $db->quote($this->_getProductName($item['name'], $product->cas_no, $myType)),
+                        ]) . ')';
+                    }
                 }
             }
             if (empty($values)) continue;
@@ -411,8 +413,9 @@ class RelationshipOP extends \Gini\Controller\CLI
     }
      */
 
-    private function _getProductType($type, $subType=null, $cas=null)
+    private function _getProductTypes($type, $subType=null, $cas=null)
     {
+        $result = [];
         if ($cas) {
             if (isset(self::$data[$cas])) {
                 $data = self::$data[$cas];
@@ -422,8 +425,9 @@ class RelationshipOP extends \Gini\Controller\CLI
                 self::$data[$cas] = $data = $rpc->product->chem->getProduct($cas);
             }
             if (is_array($data)) foreach ($data as $d) {
-                return $d['type'];
+                $result[] = $d['type'];
             }
+            if (!empty($result)) return $result;
         }
         $types = [
             \Gini\ORM\Product::RGT_TYPE_NORMAL=> 'chem_reagent',
@@ -432,9 +436,12 @@ class RelationshipOP extends \Gini\Controller\CLI
             \Gini\ORM\Product::RGT_TYPE_HIGHLY_TOXIC=> 'highly_toxic'
         ];
         if ($subType && isset($types[$subType])) {
-            return $types[$subType];
+            $result[] = $types[$subType];
         }
-        return $type;
+        else {
+            $result[] = $type;
+        }
+        return $result;
     }
 
     private function filterWorkers($pid)

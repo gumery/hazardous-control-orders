@@ -82,7 +82,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
 
         $db = \Gini\DataBase::db();
         $tableName = self::_getOPTableName();
-        $this->select('COUNT(*)', $tableName);
+        $this->select('COUNT(DISTINCT order_id)', $tableName);
         if (isset($params['conditions']['from']) && isset($params['conditions']['to'])) {
             $this->where('order_mtime', 'between', $params['conditions']['from'], $params['conditions']['to']);
         }
@@ -354,7 +354,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
     {
         $tableName = self::_getOPTableName();
         $db = \Gini\DataBase::db();
-        $this->select('id,cas_no,product_type', $tableName)->where('cas_no', '!=', '')->where($col, '=', $value)->where('order_status', '!=', \Gini\ORM\Order::STATUS_CANCELED);
+        $this->select('id,cas_no,GROUP_CONCAT(DISTINCT product_type) AS ptype', $tableName)->where('cas_no', '!=', '')->where($col, '=', $value)->where('order_status', '!=', \Gini\ORM\Order::STATUS_CANCELED);
         if (isset($conditions['product_types'])) {
             $this->where('product_type', 'in', $conditions['product_types']);
         }
@@ -388,6 +388,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 if (isset($conditions['q'])) {
                     $this->where($conditions['q']);
                 }
+                $this->groupBy(['order_id', 'product_id']);
                 $sql = $this->limit($tmpStart, $tmpPerpage)->getSQL();
                 $tmpRows = $db->query($sql)->rows();
                 if (!count($tmpRows)) {
@@ -404,7 +405,7 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 'name' => $tmpName,
                 'quantity' => $tmpCount,
                 'price' => round($tmpPrices, 2),
-                'type' => $row->product_type
+                'type' => $row->ptype
             ];
         }
         return $result;
