@@ -5,5 +5,10 @@
     "version": "0.1.10-r",
     "dependencies": {
         "gini": "*"
+    },
+    "composer": {
+        "require": {
+            "pihizi/chemical-reagent": "dev-master"
+        }
     }
 }
