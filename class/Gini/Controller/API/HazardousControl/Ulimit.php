@@ -29,7 +29,7 @@ class Ulimit extends \Gini\Controller\API\HazardousControl\Base
         if (!$ulimit->id) {
             $ulimit->cas_no = $casNO;
         }
-        $ulimit = $volume;
+        $ulimit->volume = $volume;
         $bool = $ulimit->save();
         return $bool;
     }
