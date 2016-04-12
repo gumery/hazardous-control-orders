@@ -21,7 +21,7 @@ class Ulimit extends \Gini\ORM\Object
     public function save() 
     {
         $bool = \ChemicalReagent\CASNO::verify($this->cas_no);
-        if (!$boo) return false;
+        if (!$bool) return false;
         return parent::save();
     }
 }
