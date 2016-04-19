@@ -2,13 +2,9 @@
     "id": "hazardous-control-orders",
     "name": "Hazardous Control Orders",
     "description": "Orders Module for Hazardous Control",
-    "version": "0.1.11",
+    "version": "0.1.12",
     "dependencies": {
         "gini": "*"
     },
-    "composer": {
-        "require": {
-            "pihizi/chemical-reagent": "dev-master"
-        }
-    }
+    "composer": []
 }
