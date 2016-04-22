@@ -33,9 +33,9 @@ class HazardousControlOrders
             $cas_no = $product->cas_no;
             $package = $product->package;
             $ulimit = a('hazardous/ulimit', ['cas_no'=>$cas_no]);
-            if (!$ulimit->id || ($ulimit->volume == NULL)) continue;
+            if (!$ulimit->id || ((string)$ulimit->volume === '')) continue;
             // 如果设置为0不允许购买
-            if ($ulimit->volume == 0) {
+            if ((string)$ulimit->volume === '0') {
                 $data[] = [
                     'reason' => H(T('该商品不允许购买')),
                     'id' => $info['id'],
@@ -76,7 +76,7 @@ class HazardousControlOrders
                     }
                     if ($pre['sum'] > $limit['sum']) {
                         $data[] = [
-                            'reason' => H(T('超出危化品管控上线')),
+                            'reason' => H(T('超出危化品管控上限')),
                             'id' => $info['id'],
                             'name' => $product->name
                         ];
