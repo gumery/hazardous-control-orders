@@ -43,7 +43,7 @@ class HazardousControlOrders
                 ];
             }
             elseif ($volume = $ulimit->volume) {
-                $cas_str = 'cas/'.$ulimit->cas_no
+                $cas_str = 'cas/'.$ulimit->cas_no;
                 if (!\Gini\Unit\Conversion::of($cas_str)->validate($ulimit->volume)) {
                     return ['error' => H(T('存量上限单位异常'))];
                 }
