@@ -42,39 +42,40 @@ class HazardousControlOrders
                     'name' => $product->name
                 ];
             }
-            elseif ($ulimit->volume) {
-                $pattern = '/^(\d+(?:\.\d+)?)([^0-9]+)$/i';
-                if (!preg_match($pattern, $ulimit->volume, $matches)) {
+            elseif ($volume = $ulimit->volume) {
+                $cas_str = 'cas/'.$ulimit->cas_no
+                if (!\Gini\Unit\Conversion::of($cas_str)->validate($ulimit->volume)) {
                     return ['error' => H(T('存量上限单位异常'))];
                 }
-                $pattern2 = '/^(\d+(?:\.\d+)?)([A-Za-zμ]+)(\s?\\*\s?\d+)?$/i';
-                if (!preg_match($pattern2, $package, $matches2)) {
+
+                $pattern = '/^(\d+(?:\.\d+)?)([A-Za-zμ]+)(\s?\\*\s?\d+)?$/i';
+                if (!preg_match($pattern, $package, $matches)) {
                     return ['error' => H(T('商品包装异常'))];
                 }
-                else {
-                    $p_num = $matches2[1] * (int)$info['quantity'];
-                    $p_unit = $matches2[2];
-                    $pattern3 = '/^(\s?\\*\s?)(\d+)$/i';
-                    if ( ($addition = $matches2[3]) &&  preg_match($pattern3, $addition, $matches3)) {
-                        $mult = $matches3[2];
-                        $p_num = $p_num * (int)$mult;
-                    }
+
+                // 商品包装 商品单位
+                $p_num = $matchess[1];
+                $p_unit = $matches[2];
+                $pattern = '/^(\s?\\*\s?)(\d+)$/i';
+                if ( ($addition = $matches[3]) &&  preg_match($pattern, $addition, $mat)) {
+                    $mult = $mat[2];
+                    $p_num = $p_num * (int)$mult;
                 }
-                $ret = $rpc->mall->inventory->getHazardousTotal($cas_no);
-                $num = $ret['dosage'];
-                $unit = $ret['unit'];
-                if ($num == 0) continue;
-                // 存量超出上线
+                $pTotal = ($p_num * (int)$info['quantity']).$p_unit;
+
+                $total = $rpc->mall->inventory->getHazardousTotal($cas_no);
+                if (!$total) continue;
+                // 存量超出上限
                 if ($mode == 'inv-limit') {
-                    $inv_data   = ['num'=>$num, 'unit'=>$unit];
-                    $p_data = ['num'=>$p_num, 'unit'=>$p_unit];
-                    $limit_data = ['num'=>$matches[1], 'unit'=>$matches[2]];
-                    $pre   = self::_mixData([$inv_data, $p_data]);
-                    $limit = self::_mixData([$limit_data]);
-                    if (!$pre || !$limit || ($pre['unit'] !== $limit['unit'])) {
-                        return ['error' => H(T('危化品无法进行统计'))];
-                    }
-                    if ($pre['sum'] > $limit['sum']) {
+                    $i = \Gini\Unit\Conversion::of($cas_str);
+                    $iWeight = $i->from($total)->to('g');
+                    $pWeight = $i->from($pTotal)->to('g');
+                    $lWeight = $i->from($volume)->to('g');
+                    list($iNum,$foo) = (array)$i->parse($iWeight);
+                    list($pNum,$foo) = (array)$i->parse($pWeight);
+                    list($lNum,$foo) = (array)$i->parse($lWeight);
+                    $sum = $iNum +$pNum;
+                    if ($sum > $lNum) {
                         $data[] = [
                             'reason' => H(T('超出危化品管控上限')),
                             'id' => $info['id'],
