@@ -68,12 +68,9 @@ class HazardousControlOrders
                 // 存量超出上限
                 if ($mode == 'inv-limit') {
                     $i = \Gini\Unit\Conversion::of($cas_str);
-                    $iWeight = $i->from($total)->to('g');
-                    $pWeight = $i->from($pTotal)->to('g');
-                    $lWeight = $i->from($volume)->to('g');
-                    list($iNum,$foo) = (array)$i->parse($iWeight);
-                    list($pNum,$foo) = (array)$i->parse($pWeight);
-                    list($lNum,$foo) = (array)$i->parse($lWeight);
+                    $iNum = $i->from($total)->to('g');
+                    $pNum = $i->from($pTotal)->to('g');
+                    $lNum = $i->from($volume)->to('g');
                     $sum = $iNum +$pNum;
                     if ($sum > $lNum) {
                         $data[] = [
