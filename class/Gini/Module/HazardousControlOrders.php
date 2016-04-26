@@ -43,8 +43,7 @@ class HazardousControlOrders
                 ];
             }
             elseif ($volume = $ulimit->volume) {
-                $cas_str = 'cas/'.$ulimit->cas_no;
-                if (!\Gini\Unit\Conversion::of($cas_str)->validate($ulimit->volume)) {
+                if (!\Gini\Unit\Conversion::of($product)->validate($ulimit->volume)) {
                     return ['error' => H(T('存量上限单位异常'))];
                 }
 
@@ -54,20 +53,21 @@ class HazardousControlOrders
                 }
 
                 // 商品包装 商品单位
-                $p_num = $matchess[1];
+                $p_num = $matches[1];
                 $p_unit = $matches[2];
                 $pattern = '/^(\s?\\*\s?)(\d+)$/i';
                 if ( ($addition = $matches[3]) &&  preg_match($pattern, $addition, $mat)) {
                     $mult = $mat[2];
                     $p_num = $p_num * (int)$mult;
                 }
+
                 $pTotal = ($p_num * (int)$info['quantity']).$p_unit;
 
                 $total = $rpc->mall->inventory->getHazardousTotal($cas_no);
                 if (!$total) continue;
                 // 存量超出上限
                 if ($mode == 'inv-limit') {
-                    $i = \Gini\Unit\Conversion::of($cas_str);
+                    $i = \Gini\Unit\Conversion::of($product);
                     $iNum = $i->from($total)->to('g');
                     $pNum = $i->from($pTotal)->to('g');
                     $lNum = $i->from($volume)->to('g');
@@ -93,38 +93,6 @@ class HazardousControlOrders
         }
         return $data;
     }
-
-    /**
-     * [[100, mg], [50, kg], [10, g]]
-     */
-    private static function _mixData($mix)
-    {
-        $con1 = ['μl'=>0.001,'ul'=>0.001,'ml'=>1,'cl'=>10,'dl'=>100,'l'=>1000];
-        $con2 = ['ug'=>0.000001,'μg'=>0.000001,'mg'=>0.001,'g'=>1,'kg'=>1000];
-        $sum = 0;
-        foreach ($mix as $vs) {
-            $num  = $vs['num'];
-            $unit = $vs['unit'];
-            if ($mult = $con1[$unit]) {
-                $volume = true;
-                $u = 'ml';
-                $sum +=  $mult * $num;
-            }
-            elseif ($mult = $con2[$unit]) {
-                $weight = true;
-                $u = 'g';
-                $sum += $mult * $num;
-            }
-        }
-        if (($volume || $weight) && ($volume != $weight)) {
-            return [
-                'sum' => $sum,
-                'unit' => $u
-            ];
-        }
-        return false;
-    }
-
 }
 
 
