@@ -64,7 +64,6 @@ class HazardousControlOrders
                 $pTotal = ($p_num * (int)$info['quantity']).$p_unit;
 
                 $total = $rpc->mall->inventory->getHazardousTotal($cas_no);
-                if (!$total) continue;
                 // 存量超出上限
                 if ($mode == 'inv-limit') {
                     $i = \Gini\Unit\Conversion::of($product);
@@ -82,6 +81,7 @@ class HazardousControlOrders
                 }
                 // 存量有无限制
                 elseif ($mode == 'inv-exists') {
+                if (!$total) continue;
                     // 如果有存货就不可以购买
                     $data[] = [
                         'reason' => H(T('该商品有存货, 不允许购买')),
