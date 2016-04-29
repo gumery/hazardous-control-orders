@@ -47,7 +47,7 @@ class HazardousControlOrders
                     return ['error' => H(T('存量上限单位异常'))];
                 }
 
-                $pattern = '/^(\d+(?:\.\d+)?)([A-Za-zμ]+)(\s?\\*\s?\d+)?$/i';
+                $pattern = '/^(\d+(?:\.\d+)?)([A-Za-zμ3]+)(\s?\\*\s?\d+)?$/i';
                 if (!preg_match($pattern, $package, $matches)) {
                     return ['error' => H(T('商品包装异常'))];
                 }
