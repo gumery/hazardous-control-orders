@@ -15,7 +15,7 @@ class HazardousControlOrders
         return $errors;
     }
 
-    public static function getUnableProducts($e, $products)
+    public static function getUnableProducts($e, $products, $group, $user)
     {
         if (!count($products)) return [];
         $mode = \Gini\Config::get('hazardous.mode');
@@ -63,7 +63,7 @@ class HazardousControlOrders
 
                 $pTotal = ($p_num * (int)$info['quantity']).$p_unit;
 
-                $total = $rpc->mall->inventory->getHazardousTotal($cas_no);
+                $total = $rpc->mall->inventory->getHazardousTotal($cas_no, $group->id);
                 // 存量超出上限
                 if ($mode == 'inv-limit') {
                     $i = \Gini\Unit\Conversion::of($product);
