@@ -73,7 +73,7 @@ class HazardousControlOrders
                     $sum = $iNum +$pNum;
                     if ($sum > $lNum) {
                         $data[] = [
-                            'reason' => H(T('超出危化品管控上限')),
+                            'reason' => H(T('超出该商品的管控上限')),
                             'id' => $info['id'],
                             'name' => $product->name
                         ];
