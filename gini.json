@@ -7,5 +7,9 @@
         "unit-conv": "*",
         "gini": "*"
     },
-    "composer": []
+    "composer": {
+        "require": {
+            "pihizi/chemical-reagent": "dev-master"
+        }
+    }
 }
