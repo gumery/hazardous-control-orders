@@ -2,7 +2,7 @@
     "id": "hazardous-control-orders",
     "name": "Hazardous Control Orders",
     "description": "Orders Module for Hazardous Control",
-    "version": "0.1.23",
+    "version": "0.1.24",
     "dependencies": {
         "unit-conv": "*",
         "gini": "*"
