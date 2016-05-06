@@ -16,6 +16,32 @@ class RelationshipOP extends \Gini\Controller\CLI
         return \Gini\Config::get('hazardous-control-orders.table') ?: '_hazardous_control_order_product';
     }
 
+    private static $_tagRPC;
+    private static function _getTagRPC()
+    {
+        if (self::$_tagRPC) return self::$_tagRPC;
+
+        $conf = \Gini\Config::get('tag-db.rpc');
+        $tagURL = $conf['url'];
+        $client = \Gini\Config::get('tag-db.client');
+        $clientID= $client['id'];
+        $clientSecret = $client['secret'];
+        $rpc = \Gini\IoC::construct('\Gini\RPC', $tagURL);
+        if ($rpc->tagdb->authorize($clientID, $clientSecret)) {
+            self::$_tagRPC = $rpc;
+        }
+
+        return self::$_tagRPC;
+    }
+
+    private static function _getTagData($gid = 0)
+    {
+        $node = \Gini\Config::get('app.node');
+        $tag = "labmai-{$node}/{$gid}";
+        $rpc = self::_getTagRPC();
+        return (array)$rpc->tagdb->data->get($tag);
+    }
+
     private static $schema = [
         'fields' => [
             'id' => [
@@ -24,6 +50,9 @@ class RelationshipOP extends \Gini\Controller\CLI
             ],
             'order_id' => [
                 'type' => 'bigint',
+            ],
+            'order_ctime' => [
+                'type' => 'datetime',
             ],
             'order_mtime' => [
                 'type' => 'datetime',
@@ -51,6 +80,18 @@ class RelationshipOP extends \Gini\Controller\CLI
                 'type' => 'bigint',
             ],
             'group_name' => [
+                'type' => 'varchar(120)',
+            ],
+            'college_code' => [
+                'type' => 'varchar(120)',
+            ],
+            'college_name' => [
+                'type' => 'varchar(120)',
+            ],
+            'department_code' => [
+                'type' => 'varchar(120)',
+            ],
+            'department_name' => [
                 'type' => 'varchar(120)',
             ],
             'order_price' => [
@@ -95,11 +136,26 @@ class RelationshipOP extends \Gini\Controller\CLI
             '_MIDX_GROUP_NAME' => [
                 'fields' => ['group_name'],
             ],
+            '_MIDX_COLLEGE_CODE' => [
+                'fields' => ['college_code'],
+            ],
+            '_MIDX_COLLEGE_NAME' => [
+                'fields' => ['college_name'],
+            ],
+            '_MIDX_DEPARTMENT_CODE' => [
+                'fields' => ['department_code'],
+            ],
+            '_MIDX_DEPARTMENT_NAME' => [
+                'fields' => ['department_name'],
+            ],
             '_MIDX_ORDER_ID' => [
                 'fields' => ['order_id'],
             ],
             '_MIDX_ORDER_MD5' => [
                 'fields' => ['order_md5'],
+            ],
+            '_MIDX_ORDER_CTIME' => [
+                'fields' => ['order_ctime'],
             ],
             '_MIDX_ORDER_MTIME' => [
                 'fields' => ['order_mtime'],
@@ -163,7 +219,12 @@ class RelationshipOP extends \Gini\Controller\CLI
             $values = [];
             foreach ($rows as $row) {
                 $items = (array) $row->items;
-
+                $orgs = $this->_getTagData($row->group->id);
+                $orgs = $orgs['organization'];
+                $college_code = $orgs['parent']['code'] ?: $orgs['code'];
+                $college_name = $orgs['parent']['name'] ?: $orgs['name'];
+                $department_code = $orgs['parent']['code'] ? $orgs['code'] : '';
+                $department_name = $orgs['parent']['name'] ? $orgs['name'] : '';
                 $qRowID = $db->quote($row->id);
                 $qRowMd5 = $db->quote($this->getMd5($row));
                 // 检测有没有历史数据
@@ -198,6 +259,8 @@ class RelationshipOP extends \Gini\Controller\CLI
                             // orderid
                             $db->quote($row->id),
                             // orderctime
+                            $db->quote($row->ctime),
+                            // ordermtime
                             $db->quote($row->mtime),
                             // ordermd5
                             $db->quote($this->getMd5($row)),
@@ -215,6 +278,14 @@ class RelationshipOP extends \Gini\Controller\CLI
                             $db->quote($row->group->id),
                             // groupname
                             $db->quote($row->group->title),
+                            // college_code
+                            $db->quote($college_code),
+                            // college_name
+                            $db->quote($college_name),
+                            // dep_code
+                            $db->quote($department_code),
+                            // dep_name
+                            $db->quote($department_name),
                             // orderprice
                             $db->quote(round($row->price, 2)),
                             // product package
@@ -451,6 +522,7 @@ class RelationshipOP extends \Gini\Controller\CLI
             \Gini\ORM\Product::RGT_TYPE_HAZARDOUS => 'hazardous',
             \Gini\ORM\Product::RGT_TYPE_DRUG_PRECURSOR => 'drug_precursor',
             \Gini\ORM\Product::RGT_TYPE_HIGHLY_TOXIC => 'highly_toxic',
+            \Gini\ORM\Product::RGT_TYPE_EXPLOSIVE => 'explosive',
         ];
         if ($subType && isset($types[$subType])) {
             $result[] = $types[$subType];
@@ -506,6 +578,8 @@ class RelationshipOP extends \Gini\Controller\CLI
                             // orderid
                             $dbb->quote($tmpRow->order_id),
                             // orderctime
+                            $dbb->quote($tmpRow->order_ctime),
+                            // ordermtime
                             $dbb->quote($tmpRow->order_mtime),
                             // ordermd5
                             $dbb->quote($tmpRow->order_md5),
@@ -523,6 +597,14 @@ class RelationshipOP extends \Gini\Controller\CLI
                             $dbb->quote($tmpRow->group_id),
                             // groupname
                             $dbb->quote($tmpRow->group_title),
+                            // college_code
+                            $dbb->quote($tmpRow->college_code),
+                            // college_name
+                            $dbb->quote($tmpRow->college_name),
+                            // department_code
+                            $dbb->quote($tmpRow->department_code),
+                            // department_name
+                            $dbb->quote($tmpRow->department_name),
                             // orderprice
                             $dbb->quote(round($tmpRow->order_price, 2)),
                             // product package
