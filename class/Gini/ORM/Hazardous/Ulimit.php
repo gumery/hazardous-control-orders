@@ -18,10 +18,65 @@ class Ulimit extends \Gini\ORM\Object
         'unique:cas_no',
     ];
 
-    public function save() 
+    const CAS_DEFAULT_ALL   = 'all';
+    const CAS_DEFAULT_HAZ   = 'hazardous';
+    const CAS_DEFAULT_DRUG  = 'drug_precursor';
+    const CAS_DEFAULT_TOXIC = 'highly_toxic';
+    const CAS_DEFAULT_EXP   = 'explosive';
+
+    static $default_cas_nos = [
+		self::CAS_DEFAULT_ALL   => '全部',
+		self::CAS_DEFAULT_HAZ   => '危化品',
+		self::CAS_DEFAULT_DRUG  => '易制毒',
+		self::CAS_DEFAULT_TOXIC => '剧毒品',
+		self::CAS_DEFAULT_EXP   => '易制爆',
+    ];
+
+    protected static $TIMEOUT = 86400;
+
+    private $_RPC;
+    public static function getRPC()
     {
-        $bool = \ChemicalReagent\CASNO::verify($this->cas_no);
-        if (!$bool) return false;
+        if (!$_RPC) {
+            $conf  = \Gini\Config::get('chem.rpc');
+            $_RPC = new \Gini\RPC($conf['url'] ?: strval($conf));
+        }
+
+        return $_RPC;
+    }
+
+    public function save()
+    {
         return parent::save();
+    }
+
+    public static function getVolume($cas)
+    {
+    	$ulimit = a('hazardous/ulimit', ['cas_no'=>$cas]);
+    	if ($ulimit->id) {
+    		return $ulimit->volume;
+    	}
+    	else {
+    		$cache = \Gini\Cache::of('cas');
+    		$key = "cas-key[$cas]";
+    		$infos = $cache->get($key);
+    		if (false === $infos) {
+    			$rpc = self::getRPC();
+    			$infos = $rpc->product->chem->getProduct($cas);
+                $cache->set($key, $infos, static::$TIMEOUT);
+    		}
+    		if (!$infos) return NULL;
+    		foreach ($infos as $type => $value) {
+    			if (array_key_exists($type, self::$default_cas_nos)) {
+    				$ulimit = a('hazardous/ulimit', ['cas_no'=>$type]);
+    				if ($ulimit->id) {
+    					return $ulimit->volume;
+    				}
+    			}
+    		}
+    		$ulimit = a('hazardous/ulimit', ['cas_no'=>'all']);
+    		if ($ulimit->id) return $ulimit->volume;
+    		return NULL;
+    	}
     }
 }

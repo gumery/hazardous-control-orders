@@ -38,18 +38,19 @@ class HazardousControlOrders
             if (!$product->cas_no) continue;
             $cas_no = $product->cas_no;
             $package = $product->package;
-            $ulimit = a('hazardous/ulimit', ['cas_no'=>$cas_no]);
-            if (!$ulimit->id || ((string)$ulimit->volume === '')) continue;
+
+            $volume = \Gini\ORM\Hazardous\Ulimit::getVolume($cas_no);
+            if ((string)$volume === '') continue;
             // 如果设置为0不允许购买
-            if ((string)$ulimit->volume === '0') {
+            if ((string)$volume === '0') {
                 $data[] = [
                     'reason' => H(T('该商品不允许购买')),
                     'id' => $info['id'],
                     'name' => $product->name
                 ];
             }
-            elseif ($volume = $ulimit->volume) {
-                if (!\Gini\Unit\Conversion::of($product)->validate($ulimit->volume)) {
+            elseif ($volume) {
+                if (!\Gini\Unit\Conversion::of($product)->validate($volume)) {
                     return ['error' => H(T('存量上限单位异常'))];
                 }
 
