@@ -63,8 +63,26 @@ class RelationshipOP extends \Gini\Controller\CLI
             'product_id' => [
                 'type' => 'bigint',
             ],
-            'product_type' => [
-                'type' => 'varchar(50)',
+            'chem_reagent' => [
+                'type' => 'bigint',
+            ],
+            'bio_reagent' => [
+                'type' => 'bigint',
+            ],
+            'consumable' => [
+                'type' => 'bigint',
+            ],
+            'hazardous' => [
+                'type' => 'bigint',
+            ],
+            'drug_precursor' => [
+                'type' => 'bigint',
+            ],
+            'highly_toxic' => [
+                'type' => 'bigint',
+            ],
+            'explosive' => [
+                'type' => 'bigint',
             ],
             'cas_no' => [
                 'type' => 'varchar(15)',
@@ -121,8 +139,26 @@ class RelationshipOP extends \Gini\Controller\CLI
                 'type' => 'primary',
                 'fields' => ['id'],
             ],
-            '_MIDX_PRODUCT_TYPE' => [
-                'fields' => ['product_type'],
+            '_MIDX_CHEM_REAGENT' => [
+                'fields' => ['chem_reagent'],
+            ],
+            '_MIDX_BIO_REAGENT' => [
+                'fields' => ['bio_reagent'],
+            ],
+            '_MIDX_CONSUMABLE' => [
+                'fields' => ['consumable'],
+            ],
+            '_MIDX_HAZARDOUS' => [
+                'fields' => ['hazardous'],
+            ],
+            '_MIDX_DRUG_PRECURSOR' => [
+                'fields' => ['drug_precursor'],
+            ],
+            '_MIDX_HIGHLY_TOXIC' => [
+                'fields' => ['highly_toxic'],
+            ],
+            '_MIDX_EXPLOSIVE' => [
+                'fields' => ['explosive'],
             ],
             '_MIDX_VENDOR_NAME' => [
                 'fields' => ['vendor_name'],
@@ -254,54 +290,57 @@ class RelationshipOP extends \Gini\Controller\CLI
                     if (empty($myTypes)) {
                         continue;
                     }
-                    foreach ($myTypes as $myType) {
-                        $values[] = '('.implode(',', [
-                            // orderid
-                            $db->quote($row->id),
-                            // orderctime
-                            $db->quote($row->ctime),
-                            // ordermtime
-                            $db->quote($row->mtime),
-                            // ordermd5
-                            $db->quote($this->getMd5($row)),
-                            // productid
-                            $db->quote($product->id),
-                            // producttype
-                            $db->quote($myType),
-                            // casno
-                            $db->quote(trim($product->cas_no)),
-                            // vendorid
-                            $db->quote($row->vendor->id),
-                            // vendorname
-                            $db->quote($row->vendor->name),
-                            // groupid
-                            $db->quote($row->group->id),
-                            // groupname
-                            $db->quote($row->group->title),
-                            // college_code
-                            $db->quote($college_code),
-                            // college_name
-                            $db->quote($college_name),
-                            // dep_code
-                            $db->quote($department_code),
-                            // dep_name
-                            $db->quote($department_name),
-                            // orderprice
-                            $db->quote(round($row->price, 2)),
-                            // product package
-                            $db->quote(trim($product->package)),
-                            // product quantity
-                            $db->quote($item['quantity']),
-                            // product unit price
-                            $db->quote($item['unit_price']),
-                            // product total price
-                            $db->quote($item['price']),
-                            // order status
-                            $db->quote($row->status),
-                            // product name
-                            $db->quote($this->_getProductName($item['name'], $product->cas_no, $myType)),
-                        ]).')';
-                    }
+                    $values[] = '('.implode(',', [
+                        // orderid
+                        $db->quote($row->id),
+                        // orderctime
+                        $db->quote($row->ctime),
+                        // ordermtime
+                        $db->quote($row->mtime),
+                        // ordermd5
+                        $db->quote($this->getMd5($row)),
+                        // productid
+                        $db->quote($product->id),
+                        (int)in_array('chem_reagent', $myTypes),
+                        (int)in_array('bio_reagent', $myTypes),
+                        (int)in_array('consumable', $myTypes),
+                        (int)in_array('hazardous', $myTypes),
+                        (int)in_array('drug_precursor', $myTypes),
+                        (int)in_array('highly_toxic', $myTypes),
+                        (int)in_array('explosive', $myTypes),
+                        // casno
+                        $db->quote(trim($product->cas_no)),
+                        // vendorid
+                        $db->quote($row->vendor->id),
+                        // vendorname
+                        $db->quote($row->vendor->name),
+                        // groupid
+                        $db->quote($row->group->id),
+                        // groupname
+                        $db->quote($row->group->title),
+                        // college_code
+                        $db->quote($college_code),
+                        // college_name
+                        $db->quote($college_name),
+                        // dep_code
+                        $db->quote($department_code),
+                        // dep_name
+                        $db->quote($department_name),
+                        // orderprice
+                        $db->quote(round($row->price, 2)),
+                        // product package
+                        $db->quote(trim($product->package)),
+                        // product quantity
+                        $db->quote($item['quantity']),
+                        // product unit price
+                        $db->quote($item['unit_price']),
+                        // product total price
+                        $db->quote($item['price']),
+                        // order status
+                        $db->quote($row->status),
+                        // product name
+                        $db->quote($this->_getProductName($item['name'], $product->cas_no, $myType)),
+                    ]).')';
                 }
             }
             if (empty($values)) {
@@ -512,13 +551,14 @@ class RelationshipOP extends \Gini\Controller\CLI
                 foreach ($data as $d) {
                     $result[] = $d['type'];
                 }
+                $result[] = $type;
             }
             if (!empty($result)) {
                 return $result;
             }
         }
         $types = [
-            \Gini\ORM\Product::RGT_TYPE_NORMAL => 'chem_reagent',
+            \Gini\ORM\Product::RGT_TYPE_NORMAL => 'normal',
             \Gini\ORM\Product::RGT_TYPE_HAZARDOUS => 'hazardous',
             \Gini\ORM\Product::RGT_TYPE_DRUG_PRECURSOR => 'drug_precursor',
             \Gini\ORM\Product::RGT_TYPE_HIGHLY_TOXIC => 'highly_toxic',
@@ -526,9 +566,8 @@ class RelationshipOP extends \Gini\Controller\CLI
         ];
         if ($subType && isset($types[$subType])) {
             $result[] = $types[$subType];
-        } else {
-            $result[] = $type;
         }
+        $result[] = $type;
 
         return $result;
     }
@@ -541,6 +580,7 @@ class RelationshipOP extends \Gini\Controller\CLI
         return count(explode("\n", $ps)) > 2;
          */
     }
+    /*
     public function actionResetPType()
     {
         $dba = \Gini\Database::db('chemdb');
@@ -645,4 +685,5 @@ class RelationshipOP extends \Gini\Controller\CLI
             }
         }
     }
+    */
 }

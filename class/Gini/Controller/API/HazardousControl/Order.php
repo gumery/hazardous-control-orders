@@ -6,7 +6,7 @@ namespace Gini\Controller\API\HazardousControl;
 class Order extends \Gini\Controller\API\HazardousControl\Base
 {
     private static $allowedTypes = [
-    	'vendor' => 'vendor_id',
+        'vendor' => 'vendor_id',
         'group' => 'group_id',
         'college' => 'college_code',
     ];
@@ -16,8 +16,8 @@ class Order extends \Gini\Controller\API\HazardousControl\Base
         return \Gini\Config::get('hazardous-control-orders.table') ?: '_hazardous_control_order_product';
     }
 
-	public function actionSearchOrderStat($criteria)
-	{
+    public function actionSearchOrderStat($criteria)
+    {
         $result = [
             'total' => 0,
             'token' => '',
@@ -40,10 +40,10 @@ class Order extends \Gini\Controller\API\HazardousControl\Base
             'token' => $token,
         ];
         return $result;
-	}
+    }
 
-	public function actionGetOrderStat($token, $start = 0, $perpage = 25)
-	{
+    public function actionGetOrderStat($token, $start = 0, $perpage = 25)
+    {
         $result   = [];
         $criteria = $_SESSION[$token];
         if (empty($criteria)) {
@@ -103,7 +103,7 @@ class Order extends \Gini\Controller\API\HazardousControl\Base
         }
         $data['data'] = $info;
         return $data;
-	}
+    }
 
     private function _getStatSQL($criteria)
     {
@@ -124,22 +124,22 @@ class Order extends \Gini\Controller\API\HazardousControl\Base
         return $select.$where.$groupBy.$limit;
     }
 
-	private function _getGroupBy($type)
-	{
-		$col = self::$allowedTypes[$type];
-		$groupBy = " GROUP BY {$col}";
-		return $groupBy;
-	}
+    private function _getGroupBy($type)
+    {
+        $col = self::$allowedTypes[$type];
+        $groupBy = " GROUP BY {$col}";
+        return $groupBy;
+    }
 
-	private function _getWhere($criteria)
-	{
-		$where  = [];
+    private function _getWhere($criteria)
+    {
+        $where  = [];
         $sql    = '';
         $db     = \Gini\Database::db();
-		if (isset($criteria['college_name'])) {
+        if (isset($criteria['college_name'])) {
             $college_name = $db->quote('%'.$criteria['college_name'].'%');
             $where[] = "`college_name` LIKE {$college_name}";
-		}
+        }
         if (isset($criteria['group_name'])) {
             $group_name = $db->quote('%'.$criteria['group_name'].'%');
             $where[] = "`group_name` LIKE {$group_name}";
@@ -158,31 +158,31 @@ class Order extends \Gini\Controller\API\HazardousControl\Base
         }
         if (isset($criteria['product_type'])) {
             $chem_types = [
-                \Gini\ORM\Product::RGT_TYPE_NORMAL         => $db->quote('chem_reagent'),
-                \Gini\ORM\Product::RGT_TYPE_HAZARDOUS      => $db->quote('hazardous'),
-                \Gini\ORM\Product::RGT_TYPE_DRUG_PRECURSOR => $db->quote('drug_precursor'),
-                \Gini\ORM\Product::RGT_TYPE_HIGHLY_TOXIC   => $db->quote('highly_toxic'),
-                \Gini\ORM\Product::RGT_TYPE_EXPLOSIVE      => $db->quote('explosive'),
+                'chem_reagent',
+                'bio_reagent',
+                'consumable',
+                'normal',
+                'hazardous',
+                'drug_precursor',
+                'highly_toxic',
+                'explosive',
             ];
-            $chem_types = implode(',', $chem_types);
-            if ($criteria['product_type'] == 'chem_reagent') {
-                $where[] = "`product_type` in ({$chem_types})";
-            }
-            else {
-                $product_type = $db->quote($criteria['product_type']);
-                $where[] = "`product_type` = {$product_type}";
+            if (in_array($criteria['product_type'], $chem_types)) {
+                $product_type = $criteria['product_type'];
+                $type_value = $db->quote($product_type);
+                $where[] = "`$product_type` = 1";
             }
         }
         if (count($where)) {
             $sql = ' WHERE '.implode(' AND ', $where);
         }
         return $sql;
-	}
+    }
 
-	private function _getSelect($type)
-	{
-		$db = \Gini\Database::db();
-		$tableName = self::_getOPTableName();
+    private function _getSelect($type)
+    {
+        $db = \Gini\Database::db();
+        $tableName = self::_getOPTableName();
         $sql = 'SELECT ';
 
         switch ($type) {
@@ -218,8 +218,8 @@ class Order extends \Gini\Controller\API\HazardousControl\Base
         $sql               .= "COUNT(DISTINCT order_id) AS total_count,";
         $sql .= "SUM(product_quantity) as product_count";
 
-		$sql .= ' FROM '.$db->quoteIdent($tableName);
-		return $sql;
-	}
+        $sql .= ' FROM '.$db->quoteIdent($tableName);
+        return $sql;
+    }
 
 }
