@@ -38,8 +38,8 @@ class HazardousControlOrders
             if (!$product->cas_no) continue;
             $cas_no = $product->cas_no;
             $package = $product->package;
-
-            $volume = \Gini\ORM\Hazardous\Ulimit::getVolume($cas_no);
+            $i = \Gini\Unit\Conversion::of($product);
+            $volume = \Gini\ORM\Hazardous\Ulimit::getVolume($i, $cas_no);
             if ((string)$volume === '') continue;
             // 如果设置为0不允许购买
             if ((string)$volume === '0') {
@@ -50,7 +50,7 @@ class HazardousControlOrders
                 ];
             }
             elseif ($volume) {
-                if (!\Gini\Unit\Conversion::of($product)->validate($volume)) {
+                if (!$i->validate($volume)) {
                     return ['error' => H(T('存量上限单位异常'))];
                 }
 
@@ -73,7 +73,6 @@ class HazardousControlOrders
                 $total = $rpc->mall->inventory->getHazardousTotal($cas_no, $group->id);
                 // 存量超出上限
                 if ($mode == 'inv-limit') {
-                    $i = \Gini\Unit\Conversion::of($product);
                     $iNum = $i->from($total)->to('g');
                     $pNum = $i->from($pTotal)->to('g');
                     $lNum = $i->from($volume)->to('g');
@@ -88,7 +87,7 @@ class HazardousControlOrders
                 }
                 // 存量有无限制
                 elseif ($mode == 'inv-exists') {
-                if (!$total) continue;
+                    if (!$total) continue;
                     // 如果有存货就不可以购买
                     $data[] = [
                         'reason' => H(T('该商品有存货, 不允许购买')),

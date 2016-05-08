@@ -50,14 +50,14 @@ class Ulimit extends \Gini\ORM\Object
         return parent::save();
     }
 
-    public static function getVolume($cas)
+    public static function getVolume($i, $cas)
     {
     	$ulimit = a('hazardous/ulimit', ['cas_no'=>$cas]);
     	if ($ulimit->id) {
     		return $ulimit->volume;
     	}
     	else {
-    		$cache = \Gini\Cache::of('cas');
+    		$cache = \Gini\Cache::of('cas-info');
     		$key = "cas-key[$cas]";
     		$infos = $cache->get($key);
     		if (false === $infos) {
@@ -66,17 +66,28 @@ class Ulimit extends \Gini\ORM\Object
                 $cache->set($key, $infos, static::$TIMEOUT);
     		}
     		if (!$infos) return NULL;
-    		foreach ($infos as $type => $value) {
-    			if (array_key_exists($type, self::$default_cas_nos)) {
-    				$ulimit = a('hazardous/ulimit', ['cas_no'=>$type]);
-    				if ($ulimit->id) {
-    					return $ulimit->volume;
-    				}
-    			}
-    		}
-    		$ulimit = a('hazardous/ulimit', ['cas_no'=>'all']);
-    		if ($ulimit->id) return $ulimit->volume;
-    		return NULL;
+            $types = array_keys($infos);
+            $types[] = 'all';
+            $ulimits = Those('hazardous/ulimit')->Whose('cas_no')->isIn($types);
+            $n = 0;
+            $min_ulimit = a('hazardous/ulimit');
+            foreach ($ulimits as $ulimit) {
+                $volume = $ulimit->volume;
+                if ((string)$volume === '0') return $volume;
+                if ($volume) {
+                    $v = $i->from($volume)->to('g');
+                    if (!$v) continue;
+                    $n++;
+                    if ($n == 1 || ($min_v && $v < $min_v)) {
+                        $min_v = $v;
+                        $min_ulimit = $ulimit;
+                    }
+                }
+            }
+            if ($min_ulimit->id) {
+                return $min_ulimit->volume;
+            }
+            return NULL;
     	}
     }
 }
