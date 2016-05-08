@@ -53,7 +53,7 @@ class Ulimit extends \Gini\ORM\Object
     public static function getVolume($i, $cas)
     {
     	$ulimit = a('hazardous/ulimit', ['cas_no'=>$cas]);
-    	if ($ulimit->id) {
+    	if ($ulimit->id && $ulimit->volume !== '') {
     		return $ulimit->volume;
     	}
     	else {
