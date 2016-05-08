@@ -76,7 +76,6 @@ class Ulimit extends \Gini\ORM\Object
                 if ((string)$volume === '0') return $volume;
                 if ($volume) {
                     $v = $i->from($volume)->to('g');
-                    if (!$v) continue;
                     $n++;
                     if ($n == 1 || ($min_v && $v < $min_v)) {
                         $min_v = $v;
