@@ -148,8 +148,7 @@ class HazardousControlOrders
         $volume = $cache->get($key);
         if (false === $volume) {
             $rpc = self::getRPC('lab-inventory');
-            $criteria = ['cas_no'=>$cas_no, 'group_id'=>$group_id];
-            $volume = $rpc->inventory->getLimitVolume($criteria);
+            $volume = $rpc->mall->inventory->getHazardousTotal($cas_no, $group_id);
             $cache->set($key, $volume, 15);
         }
         return ['volume' => $volume];
