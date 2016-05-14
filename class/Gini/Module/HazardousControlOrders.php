@@ -74,26 +74,19 @@ class HazardousControlOrders
                     continue;
                 }
 
-                // 存量超出上限
+                $iNum = $i->from($idata['volume'])->to('g');
+                $lNum = $i->from($volume)->to('g');
                 if ($mode == 'inv-limit') {
-                    $iNum = $i->from($idata['volume'])->to('g');
                     $pNum = $i->from($pdata['volume'])->to('g');
-                    $lNum = $i->from($volume)->to('g');
                     $sum = $iNum +$pNum;
-                    if ($sum > $lNum) {
-                        $data[] = [
-                            'reason' => H(T('超出该商品的管控上限')),
-                            'id' => $info['id'],
-                            'name' => $product->name
-                        ];
-                    }
                 }
-                // 存量有无限制
                 elseif ($mode == 'inv-exists') {
-                    if (!$iTotal) continue;
-                    // 如果有存货就不可以购买
+                    $sum = $iNum;
+                }
+
+                if ($sum > $lNum) {
                     $data[] = [
-                        'reason' => H(T('该商品有存货, 不允许购买')),
+                        'reason' => H(T('超出该商品的管控上限')),
                         'id' => $info['id'],
                         'name' => $product->name
                     ];
