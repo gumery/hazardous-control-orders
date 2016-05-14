@@ -41,7 +41,11 @@ class HazardousControlOrders
             $i       = \Gini\Unit\Conversion::of($product);
             $ldata   = self::_getCasVolume($i, $cas_no, $group_id);
             if ($ldata['error']) {
-                return $ldata['error'];
+                    $data[] = [
+                        'reason' => $ldata['error'],
+                        'id' => $info['id'],
+                        'name' => $product->name
+                    ];
             }
             $volume = $ldata['volume'];
 
@@ -131,9 +135,9 @@ class HazardousControlOrders
             $rpc = self::getRPC('hazardous-control');
             $criteria = ['cas_no'=>$cas_no, 'group_id'=>$group_id];
             $volume = $rpc->inventory->getLimitVolume($criteria);
-            $cache->set($key, $volume, 86400);
+            $cache->set($key, $volume, 5);
         }
-        if (!$i->validate($volume)) {
+        if ($volume && !$i->validate($volume)) {
             return ['error' => H(T('存量上限单位异常'))];
         }
         return ['volume'=>$volume];
