@@ -129,7 +129,7 @@ class HazardousControlOrders
             return ['error'=>'组信息丢失'];
         }
         $cache = \Gini\Cache::of('cas-volume');
-        $key = "cas-volume[$cas_no][$group_id]";
+        $key = "cas-volume-limit[$cas_no][$group_id]";
         $volume = $cache->get($key);
         if (false === $volume) {
             $rpc = self::getRPC('hazardous-control');
@@ -148,7 +148,7 @@ class HazardousControlOrders
             return ['error'=>'组信息丢失'];
         }
         $cache = \Gini\Cache::of('cas-volume');
-        $key = "cas-volume[$cas_no][$group_id]";
+        $key = "cas-volume-inv[$cas_no][$group_id]";
         $volume = $cache->get($key);
         if (false === $volume) {
             $rpc = self::getRPC('lab-inventory');
