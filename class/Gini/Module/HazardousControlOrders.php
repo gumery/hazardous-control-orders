@@ -15,7 +15,7 @@ class HazardousControlOrders
 
         $db = \Gini\Database::db();
         $tableName = \Gini\Config::get('hazardous-control-orders.table') ?: '_hazardous_control_order_product';
-        if ($db->query("DESC {$tableName}")) {
+        if (!$db->query("DESC {$tableName}")) {
             $errors[] = "请确保 {$tableName} 表已经创建: gini hazardouscontrol relationshipop prepare-table";
             $errors[] = "如果是初次部署建议初始化数据: gini hazardouscontrol relationshipop build";
         }
