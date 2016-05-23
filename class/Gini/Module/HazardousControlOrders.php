@@ -13,6 +13,13 @@ class HazardousControlOrders
         $errors = [];
         $errors[] = "请确保cron.yml配置了定时刷新的命令\n\t\thazardous-control-orders:\n\t\t\tinterval: '*/5 * * * *'\n\t\t\tcommand: hazardouscontrol relationshipop build\n\t\t\tcomment: 定时将订单的信息刷新到表里，为管理方查数据提供支持";
 
+        $db = \Gini\Database::db();
+        $tableName = \Gini\Config::get('hazardous-control-orders.table') ?: '_hazardous_control_order_product';
+        if (!$db->query("DESC {$tableName}")) {
+            $errors[] = "请确保 {$tableName} 表已经创建: gini hazardouscontrol relationshipop prepare-table";
+            $errors[] = "如果是初次部署建议初始化数据: gini hazardouscontrol relationshipop build";
+        }
+
         return $errors;
     }
 
