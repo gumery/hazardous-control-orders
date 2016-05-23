@@ -13,18 +13,12 @@ class HazardousControlOrders
         $errors = [];
         $errors[] = "请确保cron.yml配置了定时刷新的命令\n\t\thazardous-control-orders:\n\t\t\tinterval: '*/5 * * * *'\n\t\t\tcommand: hazardouscontrol relationshipop build\n\t\t\tcomment: 定时将订单的信息刷新到表里，为管理方查数据提供支持";
 
-        $mode = \Gini\Config::get('hazardous.mode');
-        if (!$mode) {
-            $errors[] = '您确定不需要设置hazardous.mode 【inv-limit | inv-exists】? 这个值将影响存量上线的逻辑';
-        }
-
         return $errors;
     }
 
     public static function getUnableProducts($e, $products, $group, $user)
     {
         if (!count($products)) return [];
-        $mode    = \Gini\Config::get('hazardous.mode');
         $conf    = \Gini\Config::get('mall.rpc');
         $client  = \Gini\Config::get('mall.client');
         $url     = $conf['lab-inventory']['url'];
@@ -48,17 +42,17 @@ class HazardousControlOrders
                     ];
             }
             $volume = $ldata['volume'];
-
+            $lNum = $i->from($volume)->to('g');
             if ((string)$volume === '') continue;
             // 如果设置为0不允许购买
-            if ((string)$volume === '0') {
+            if ((string)$lNum === '0') {
                 $data[] = [
                     'reason' => H(T('该商品不允许购买')),
                     'id' => $info['id'],
                     'name' => $product->name
                 ];
             }
-            elseif ($volume) {
+            elseif ($lNum) {
                 $pdata = self::_getProductVolume($i, $package, $info['quantity']);
                 if ($pdata['error']) {
                     $data[] = [
@@ -77,14 +71,14 @@ class HazardousControlOrders
                     ];
                     continue;
                 }
-
+                $conf = self::_getHazConf($cas_no, $group_id);
+                $count_cart = $conf['count_cart'];
                 $iNum = $i->from($idata['volume'])->to('g');
-                $lNum = $i->from($volume)->to('g');
-                if ($mode == 'inv-limit') {
+                if ($count_cart) {
                     $pNum = $i->from($pdata['volume'])->to('g');
                     $sum = $iNum +$pNum;
                 }
-                elseif ($mode == 'inv-exists') {
+                else {
                     $sum = $iNum;
                 }
 
@@ -124,6 +118,20 @@ class HazardousControlOrders
         return self::$_RPCs[$type];
     }
 
+    private static function _getHazConf($cas_no, $group_id) {
+        $conf = [];
+        $cache = \Gini\Cache::of('cas-conf');
+        $key = "haz-conf[$cas_no][$group_id]";
+        $conf = $cache->get($key);
+        if (false === $conf) {
+            $rpc = self::getRPC('hazardous-control');
+            $criteria = ['cas_no'=>$cas_no, 'group_id'=>$group_id];
+            $conf = $rpc->inventory->getHazConf($criteria);
+            $cache->set($key, $conf, 15);
+        }
+        return $conf;
+    }
+
     private static function _getCasVolume($i, $cas_no, $group_id) {
         if (!$group_id){
             return ['error'=>'组信息丢失'];
@@ -136,9 +144,6 @@ class HazardousControlOrders
             $criteria = ['cas_no'=>$cas_no, 'group_id'=>$group_id];
             $volume = $rpc->inventory->getLimitVolume($criteria);
             $cache->set($key, $volume, 5);
-        }
-        if ($volume && !$i->validate($volume)) {
-            return ['error' => H(T('存量上限单位异常'))];
         }
         return ['volume'=>$volume];
     }
