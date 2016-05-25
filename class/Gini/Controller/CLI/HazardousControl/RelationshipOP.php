@@ -357,20 +357,6 @@ class RelationshipOP extends \Gini\Controller\CLI
         }
     }
 
-    private static $rpc;
-    private static function _getRPC()
-    {
-        if (self::$rpc) {
-            return self::$rpc;
-        }
-        $config = \Gini\Config::get('hazardous-control-orders.rpc');
-        $url = $config['url'];
-        $rpc = \Gini\IoC::construct('\Gini\RPC', $url);
-        self::$rpc = $rpc;
-
-        return $rpc;
-    }
-
     private static $data = [];
     private function _getProductName($name, $cas = null, $type = null)
     {
@@ -380,8 +366,7 @@ class RelationshipOP extends \Gini\Controller\CLI
         if (isset(self::$data[$cas])) {
             $data = self::$data[$cas];
         } else {
-            $rpc = self::_getRPC();
-            self::$data[$cas] = $data = (array) $rpc->product->chem->getProduct($cas);
+            self::$data[$cas] = $data = (array) \Gini\ChemDB\Client::getProduct($cas);
         }
         if (empty($data)) {
             return $name;
@@ -544,8 +529,7 @@ class RelationshipOP extends \Gini\Controller\CLI
             if (isset(self::$data[$cas])) {
                 $data = self::$data[$cas];
             } else {
-                $rpc = self::_getRPC();
-                self::$data[$cas] = $data = $rpc->product->chem->getProduct($cas);
+                self::$data[$cas] = $data = \Gini\ChemDB\Client::getProduct($cas);
             }
             if (is_array($data)) {
                 foreach ($data as $d) {
