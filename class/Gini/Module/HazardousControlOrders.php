@@ -25,14 +25,20 @@ class HazardousControlOrders
 
     public static function getUnableProducts($e, $products, $group, $user)
     {
-        if (!count($products)) return [];
+        if (!count($products)) {
+            $e->pass();
+            return;
+        }
         $conf    = \Gini\Config::get('mall.rpc');
         $client  = \Gini\Config::get('mall.client');
         $url     = $conf['lab-inventory']['url'];
         $rpc     = \Gini\IoC::construct('\Gini\RPC', $url);
         $group_id = $group->id;
         $token   = $rpc->mall->authorize($client['id'], $client['secret']);
-        if (!$token) return ['error' => H(T('存货管理连接中断'))];
+        if (!$token) {
+            $e->abort();
+            return ['error' => H(T('存货管理连接中断'))];
+        }
         foreach ($products as $info) {
             if ($info['customized']) continue;
             $product = a('product', $info['id']);
@@ -98,7 +104,12 @@ class HazardousControlOrders
                 }
             }
         }
-        return $data?:[];
+
+        if (!empty($data)) {
+            $e->abort();
+            return $data;
+        }
+        $e->pass();
     }
 
 
