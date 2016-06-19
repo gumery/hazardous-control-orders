@@ -112,14 +112,13 @@ class HazardousControlOrders
         $e->pass();
     }
 
-
-
     protected static $_RPCs = [];
-    protected static function getRPC($type = 'lab-inventory')
+    public static function getRPC($type = 'lab-inventory')
     {
         $confs = \Gini\Config::get('mall.rpc');
         $conf = $confs[$type] ?: [];
         if (!self::$_RPCs[$type]) {
+            error_log($type.': '.$conf['url']);
             $rpc = \Gini\IoC::construct('\Gini\RPC', $conf['url']);
             self::$_RPCs[$type] = $rpc;
             $client = \Gini\Config::get('mall.client');

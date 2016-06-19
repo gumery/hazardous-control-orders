@@ -10,12 +10,63 @@
     <?php } ?>
     <h3 style="margin-top:0"><?= H(T('化学品库存上限')) ?></h3>
     <hr>
-    <h4 class="text-muted"><?= H(T('上限概况'))?></h4>
-    <p class="text-muted"><?= H(T('根据各级管控标准, 您的化学品库存上限如下'))?>:</p>
+    <h4 class="text-primary"><?= H(T('上限概况'))?></h4>
+    <p class="text-muted"><?= H(T('根据各级管控标准, 您的化学品库存上限如下'))?></p>
     <!-- 显示当前的采购上限设定 -->
-    <div class="well" style="min-height:200px"></div>
+    <div class="container-fluid">
+        <h5><strong><?= H(T('化学品类别设定'))?></strong></h5>
+        <div class="">
+        <?php
+        $titles = [
+            'all' => '全部化学品',
+            'hazardous' => '危化品',
+            'drug_precursor' => '易制毒',
+            'explosive' => '易制爆',
+            'highly_toxic' => '剧毒品',
+        ];
+
+        $type_count = 0;
+        foreach ($titles as $k => $title) {
+            if (!isset($limits[$k])) continue;
+            if ($limits[$k]) {
+                echo '<div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0">'.H($title).' <span class="tag tag-red">'.H($limits[$k]).'</span></div>';
+            } else {
+                echo '<div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0">'.H($title).' <span class="tag tag-red"> '.H(T('未限制')).'</span></div>';
+            }
+            unset($limits[$k]);
+            $type_count ++;
+        }
+        
+        if (!$type_count) {
+            echo '<div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0"><span class="text-muted">'.H(T('未设定')).'</span></div>';
+        }
+        ?>
+        </div>
+    </div>
+    <div class="container-fluid">
+        <h5><strong><?= H(T('个别化学品设定'))?></strong></h5>
+        <div class="">
+        <?php
+        $chemical_count = 0;
+        foreach ($limits as $k => $limit) {
+            $info = \Gini\ChemDB\Client::getChemicalInfo($k);
+            if (!$info) continue;
+            if ($limit) {
+                echo '<div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0">'.H($info['name']).' <span class="tag tag-red">'.H($limit).'</span></div>';
+            } else {
+                echo '<div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0">'.H($info['name']).' <span class="tag tag-red">'.H(T('未限制')).'</span></div>';
+            }
+            $chemical_count ++;
+        }
+        
+        if (!$chemical_count) {
+            echo '<div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0"><span class="text-muted">'.H(T('未设定')).'</span></div>';
+        }
+        ?>
+        </div>
+    </div>
     <!-- 提出申请 -->
-    <h4 class="text-muted"><?= H(T('上限调整申请'))?></h4>
+    <h4 class="text-primary"><?= H(T('上限调整申请'))?></h4>
     <p class="text-muted"><?= H(T('如果您所在的课题组有特殊需求, 可在此提出申请'))?>:</p>
     <div class="form-group">
         <textarea class="form-control"></textarea>
