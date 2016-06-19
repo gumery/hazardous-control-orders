@@ -30,11 +30,9 @@
             if (!isset($limits[$k])) continue;
             if ($limits[$k]) {
                 echo '<div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0">'.H($title).' <span class="tag tag-red">'.H($limits[$k]).'</span></div>';
-            } else {
-                echo '<div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0">'.H($title).' <span class="tag tag-red"> '.H(T('未限制')).'</span></div>';
+                $type_count ++;
             }
             unset($limits[$k]);
-            $type_count ++;
         }
         
         if (!$type_count) {
@@ -53,10 +51,8 @@
             if (!$info) continue;
             if ($limit) {
                 echo '<div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0">'.H($info['name']).' <span class="tag tag-red">'.H($limit).'</span></div>';
-            } else {
-                echo '<div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0">'.H($info['name']).' <span class="tag tag-red">'.H(T('未限制')).'</span></div>';
+                $chemical_count ++;
             }
-            $chemical_count ++;
         }
         
         if (!$chemical_count) {
