@@ -199,6 +199,16 @@ class HazardousControlOrders
             'volume' => ($p_num * (int)$quantity).$p_unit,
         ];
     }
+
+    public static function headerSettingsMenu($e, $menu) {
+        $me = _G('ME');
+        if ($me->id && $me->isAllowedTo('管理订单')) {
+            $menu['general']['chemical-limits'] = [
+                'url' => 'settings/chemical-limits',
+                'title' => T('化学品库存上限'),
+            ];
+        }
+    }
 }
 
 

@@ -1,0 +1,26 @@
+<div style="padding:20px">
+    <?php if (isset($form['success_message'])) { ?>
+    <div class="alert alert-success">
+        <?= H($form['success_message']); ?>
+    </div>
+    <?php } elseif (isset($form['error_message'])) { ?>
+    <div class="alert alert-error">
+        <?= H($form['error_message']); ?>
+    </div>
+    <?php } ?>
+    <h3 style="margin-top:0"><?= H(T('化学品库存上限')) ?></h3>
+    <hr>
+    <h4 class="text-muted"><?= H(T('上限概况'))?></h4>
+    <p class="text-muted"><?= H(T('根据各级管控标准, 您的化学品库存上限如下'))?>:</p>
+    <!-- 显示当前的采购上限设定 -->
+    <div class="well" style="min-height:200px"></div>
+    <!-- 提出申请 -->
+    <h4 class="text-muted"><?= H(T('上限调整申请'))?></h4>
+    <p class="text-muted"><?= H(T('如果您所在的课题组有特殊需求, 可在此提出申请'))?>:</p>
+    <div class="form-group">
+        <textarea class="form-control"></textarea>
+    </div>
+    <div class="form-group">
+        <button class="btn btn-primary"><?= H(T('提交'))?></button>
+    </div>
+</div>
