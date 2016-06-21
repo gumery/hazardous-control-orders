@@ -160,7 +160,8 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             $this->where($params['conditions']['q']);
         }
         $sql = $this->groupBy($groupBy)->limit($start, $perpage)->getSQL();
-        $rows = $db->query($sql)->rows();
+        $query = $db->query($sql);
+        $rows = $query ? $query->rows() : [];
 
         switch ($type) {
         case 'type':
@@ -365,7 +366,8 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             $this->where($conditions['q']);
         }
         $sql = $this->groupBy('cas_no')->orderBy([['product_type', 'desc']])->limit($start, $perpage)->getSQL();
-        $rows = $db->query($sql)->rows();
+        $query = $db->query($sql);
+        $rows = $query ? $query->rows() : [];
 
         $result = [];
         foreach ($rows as $row) {
@@ -390,7 +392,8 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
                 }
                 $this->groupBy(['order_id', 'product_id']);
                 $sql = $this->limit($tmpStart, $tmpPerpage)->getSQL();
-                $tmpRows = $db->query($sql)->rows();
+                $query = $db->query($sql);
+                $tmpRows = $query ? $query->rows() : [];
                 if (!count($tmpRows)) {
                     break;
                 }

@@ -56,9 +56,12 @@ class Order extends \Gini\Controller\API\HazardousControl\Base
         $dataSQL = $this->_getDataSQL($criteria, $start, $perpage);
         $statSQL = $this->_getStatSQL($criteria);
         $db      = \Gini\Database::db();
-        $stat    = $db->query($statSQL)->row();
-        $results = $db->query($dataSQL)->rows();
-        $count   = $db->query($dataSQL)->count();
+        $statQuery = $db->query($statSQL);
+        $stat    = $statQuery ? $statQuery->row() : [];
+
+        $dataQuery = $db->query($dataSQL);
+        $results = $dataQuery ? $dataQuery->rows() : [];
+        $count   = $dataQuery ? $dataQuery->count() : [];
         $data = [];
         $data['stat'] = [
             'count' => [

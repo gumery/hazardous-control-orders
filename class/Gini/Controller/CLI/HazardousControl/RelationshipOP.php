@@ -476,52 +476,6 @@ class RelationshipOP extends \Gini\Controller\CLI
         }
     }
 
-    /*
-    // 通过actionInit初始化第一版的数据，并将数据导入到hub_product的数据库，并在hub——product上执行actionRun这个方法
-    // 根据商品id完善商品信息
-    // 主要是因为rpc请求过多，build脚本执行超时频繁，所以，第一次商品信息的补充不用rpc的方式
-    public function actionRun()
-    {
-        $tableName = '_hazardous_control_order_product';
-        $start = 0;
-        $perpage = 10;
-        $db = \Gini\Database::db();
-
-        while (true) {
-            $sql = "select id,product_id from {$tableName} order by id desc limit {$start}, {$perpage}";
-            $rows = $db->query($sql)->rows();
-            if (!count($rows)) break;
-            $start += $perpage;
-            foreach ($rows as $row) {
-                $tmpID = $row->product_id;
-                $product = a('product', $tmpID);
-                $tmpType = $product->type;
-                if ($product->type=='chem_reagent') {
-                    $tmpType = [
-                        1=> 'chem_reagent',
-                        2=> 'hazardous',
-                        3=> 'drug_precursor',
-                    ][$product->rgt_type];
-                }
-                $tmpSQL = strtr("UPDATE _hazardous_control_order_product SET product_type=:ptype,cas_no=:cn,product_package=:package, product_name=:pname WHERE id={$row->id}", [
-                    ':ptype'=> $db->quote($tmpType),
-                    ':cn'=> $db->quote(trim($product->cas_no)),
-                    ':package'=> $db->quote($product->package),
-                    ':pname'=> $db->quote($product->name)
-                ]);
-                $bool = $db->query($tmpSQL);
-                if ($bool) {
-                    echo '.';
-                }
-                else {
-                    echo 'x';
-                }
-                //echo "{$row->id}: {$row->product_id} / {$row->product_type}\n";
-            }
-        }
-    }
-     */
-
     private function _getProductTypes($type, $subType = null, $cas = null)
     {
         $result = [];
