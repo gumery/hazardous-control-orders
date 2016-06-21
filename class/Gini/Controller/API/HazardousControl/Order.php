@@ -61,7 +61,7 @@ class Order extends \Gini\Controller\API\HazardousControl\Base
 
         $dataQuery = $db->query($dataSQL);
         $results = $dataQuery ? $dataQuery->rows() : [];
-        $count   = $dataQuery ? $dataQuery->count() : [];
+        $count   = $dataQuery ? $dataQuery->count() : 0;
         $data = [];
         $data['stat'] = [
             'count' => [

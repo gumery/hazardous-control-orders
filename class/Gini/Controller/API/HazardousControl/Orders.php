@@ -93,7 +93,8 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
             $this->where($params['conditions']['q']);
         }
         $sql = $this->groupBy(self::$allowedTypes[$type])->getSQL();
-        $total = $db->query($sql)->count();
+        $query = $db->query($sql);
+        $total = $query ? $query->count() : 0;
 
         $_SESSION[$token] = $params;
 
@@ -302,7 +303,8 @@ class Orders extends \Gini\Controller\API\HazardousControl\Base
         }
 
         $sql = $this->groupBy('cas_no')->getSQL();
-        $total = $db->query($sql)->count();
+        $query = $db->query($sql);
+        $total = $query ? $query->count() : 0;
 
         $_SESSION[$token] = $params;
 
