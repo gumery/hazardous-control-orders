@@ -32,7 +32,8 @@ class Order extends \Gini\Controller\API\HazardousControl\Base
         $groupBy          = $this->_getGroupBy($type);
         $sql              = $select.$where.$groupBy;
         $db               = \Gini\Database::db();
-        $count            = $db->query($sql)->count();
+        $query            = $db->query($sql);
+        $count            = $query ? $query->count() : 0;
         $token            = md5(J($criteria));
         $_SESSION[$token] = $criteria;
         $result           = [
