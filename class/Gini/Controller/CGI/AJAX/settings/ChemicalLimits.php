@@ -11,7 +11,7 @@ class ChemicalLimits extends \Gini\Controller\CGI
         if (!$me->id && !$group->id) return;
 
         $rpc = \Gini\Module\HazardousControlOrders::getRPC('chemical-limits');
-        $result = $rpc->admin->inventory->searchGroupRequest([
+        $result = $rpc->admin->inventory->searchGroupRequests([
             'group_id'=> $group->id
         ]);
         $token = $result['token'];
