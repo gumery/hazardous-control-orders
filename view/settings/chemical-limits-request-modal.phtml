@@ -1,6 +1,6 @@
 <div class="modal fade">
 	<div class="modal-dialog" >
-		<form class="form-setting-requset-application-volume" action="ajax/settings/chemical-limits/submit-application" data-require="page/inventory/reagent-append-chemical">
+		<form class="form-setting-requset-application-volume" action="ajax/settings/chemical-limits/submit-application" data-require="page/hazardous/control/orders/settings/chemical-limits-submit-application">
 			<div class="modal-content">
 				<div class="modal-header">
 					<button class="close" data-dismiss="modal"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
@@ -10,14 +10,14 @@
 					<div class="form-group">
 						<label><?=H(T('分类'))?></label>
 						<select class="form-control" name="type">
-							<option>---</option>
+							<option>--</option>
 							<?php foreach ($types as $key=>$type) {?>
 								<option value="<?=$key?>"><?=H(T("$type"))?></option>
 							<?php }?>
 						</select>
 						<label><?=H(T('化学品名称'))?></label>
 						<select class="form-control">
-							<option>---</option>
+							<option>--</option>
 						</select>
 						<label><?=H(T('上限'))?></label>
 						<input type="text" name="volume" class="form-control" />

@@ -4,7 +4,8 @@ namespace Gini\Controller\CGI\AJAX\Settings;
 
 class ChemicalLimits extends \Gini\Controller\CGI {
 	
-	public function actionGetRequestModal() {
+	public function actionGetRequestModal() 
+	{
 		$me = _G('ME');
 		$group = _G('GROUP');
 		if (!$me->id && !$group->id) return false;
@@ -16,7 +17,8 @@ class ChemicalLimits extends \Gini\Controller\CGI {
 		]));
 	}
 
-	public function actionSearchChemical() {
+	public function actionSearchChemical() 
+	{
 		$me = _G('ME');
         if (!$me->id) return;
 
@@ -31,7 +33,23 @@ class ChemicalLimits extends \Gini\Controller\CGI {
 
 	}
 
-	public function actionSubmitApplication() {
+	public function actionSubmitApplication() 
+	{
+	
+		$me = _G('ME');
+        if (!$me->id) return;
+
+        $group = _G('GROUP');
+        if (!$group->id) return;
+
+        $form = $this->form('post');
+
+        return \Gini\IoC::construct('\Gini\CGI\Response\JSON' ,TRUE);
+        // return \Gini\IoC::construct('\Gini\CGI\Response\JSON' ,[
+        // 		'code' => 1,
+        // 		'message' => 'success'
+        // 	]);
+
 
 	}
 }
