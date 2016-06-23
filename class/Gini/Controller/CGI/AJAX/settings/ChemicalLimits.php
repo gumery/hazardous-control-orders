@@ -26,7 +26,7 @@ class ChemicalLimits extends \Gini\Controller\CGI
         return \Gini\IoC::construct('\Gini\CGI\Response\HTML', V('settings/chemical-limits-requests', [
             'requests' => (array)$requests,
             'page'=> $page,
-            'total'=> ceil($count / $perpage) + 1
+            'total'=> ceil($count / $perpage)
         ]));
     }
 
