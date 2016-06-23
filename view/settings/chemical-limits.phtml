@@ -20,14 +20,8 @@
             <h5><strong><?= H(T('化学品类别设定'))?></strong></h5>
             <div class="">
             <?php
-            $titles = [
-                'all' => '全部化学品',
-                'hazardous' => '危化品',
-                'drug_precursor' => '易制毒',
-                'explosive' => '易制爆',
-                'highly_toxic' => '剧毒品',
-            ];
-
+            $titles = \Gini\Module\HazardousControlOrders::getChemicalTypes();
+            
             foreach ($titles as $vK => $vTitle) { ?>
                 <div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0">
                     <span><?=H($vTitle)?></span>
