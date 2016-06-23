@@ -9,15 +9,15 @@
         ?>
         <li>
             <?=$vRequest->cas_no ? H(T(':ctime :owner 申请了 :cas 上限到 :volume', [
-                $vRequest->ctime,
-                $vRequest->owner->name,
-                $vRequest->name ?: $vRequest->cas_no,
-                $vRequest->volume,
+                ':ctime'=> $vRequest->ctime,
+                ':owner'=> $vRequest->owner->name,
+                ':cas'=> $vRequest->name ?: $vRequest->cas_no,
+                ':volume'=> $vRequest->volume,
             ])) : H(T(':ctime :owner 申请了 :type 上限到 :volume', [
-                $vRequest->ctime,
-                $vRequest->owner->name,
-                $vRequest->type,
-                $vRequest->volume,
+                ':ctime'=> $vRequest->ctime,
+                ':owner'=> $vRequest->owner->name,
+                ':type'=> $vRequest->type,
+                ':volume'=> $vRequest->volume,
             ]))?>
         <li>
     <?php }?>
