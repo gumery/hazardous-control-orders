@@ -1,0 +1,44 @@
+<?php if (!count($requests)) { ?>
+<h4 class="text-center text-muted">
+    <?=H(T('暂无数据'))?>
+</h4>
+<?php } else { ?>
+    <ul class="list-unstyled">
+    <?php foreach ($requests as $vRequest) {
+            $vRequest = a('chemicallimits/request')->setData($vRequest);
+        ?>
+        <li>
+            <?=$vRequest->cas_no ? H(T(':ctime :owner 申请了 :cas 上限到 :volume', [
+                $vRequest->ctime,
+                $vRequest->owner->name,
+                $vRequest->name ?: $vRequest->cas_no,
+                $vRequest->volume,
+            ])) : H(T(':ctime :owner 申请了 :type 上限到 :volume', [
+                $vRequest->ctime,
+                $vRequest->owner->name,
+                $vRequest->type,
+                $vRequest->volume,
+            ]))?>
+        <li>
+    <?php }?>
+    </ul>
+	<ul class="list-unstyled text-center">
+	<?php
+		$vPFrom = (ceil($page/10) - 1) * 10 + 1;
+		$vPTo = min(ceil($page/10) * 10 +1, $total);
+		if ($vPT - $vPFrom < 11) {
+		$vPFrom = max(1, $vPTo - 11);
+		}
+	?>
+	<?php if ($vPFrom!=1) {?>
+		<li data-start="0" class="app-handler-stat-page app-pager-li-handler<?=($page==1) ? ' app-pager-li-active' : ''?>"><?=H(T('首页'))?></li>
+	<?php }?>
+	<?php for ($i=$vPFrom; $i<=$vPTo; $i++) {?>
+		<li data-start="<?=H($perpage * ($i-1))?>" class="app-handler-stat-page app-pager-li-handler<?=($page==$i) ? ' app-pager-li-active' : ''?>"><?=H($i)?></li>
+	<?php }?>
+	<?php if ($vPTo!=$total) {?>
+		<li data-start="<?=H($perpage * ($total-1))?>" class="app-handler-stat-page app-pager-li-handler<?=($page==$total) ? ' app-pager-li-active' : ''?>"><?=H(T('尾页'))?></li>
+	<?php }?>
+	</ul>
+<?php } ?>
+

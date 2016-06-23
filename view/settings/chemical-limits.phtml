@@ -1,15 +1,5 @@
 <div style="padding:20px;background:#f9f9f9;">
 
-    <?php if (isset($form['success_message'])) { ?>
-    <div class="alert alert-success">
-        <?= H($form['success_message']); ?>
-    </div>
-    <?php } elseif (isset($form['error_message'])) { ?>
-    <div class="alert alert-error">
-        <?= H($form['error_message']); ?>
-    </div>
-    <?php } ?>
-
     <h3 style="margin-top:0"><?= H(T('化学品库存上限')) ?></h3>
     <hr/>
 
@@ -67,8 +57,6 @@
 
     <div style="margin:20px 0;">
         <h4 class="text-muted"><?= H(T('申请审批记录'))?></h4>
-        <div>
-            <div class="text-muted">(暂无)</div>
-        </div>
+        <?=$requestsHTML?>
     </div>
 </div>
