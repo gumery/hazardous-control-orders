@@ -17,11 +17,11 @@
                 ])) : H(T(':ctime :owner 申请了 :type 上限到 :volume', [
                     ':ctime'=> $vRequest->ctime,
                     ':owner'=> $vRequest->owner->name,
-                    ':type'=> \Gini\ORM\Inventory\Request::getTypeTtile($vRequest->type),
+                    ':type'=> \Gini\ORM\ChemicalLimits\Request::getTypeTtile($vRequest->type),
                     ':volume'=> $vRequest->volume,
                 ]))?>
-                <?php if ($vRequest->status==\Gini\ORM\Inventory\Request::STATUS_PENDING) { ?>
-                <span><?=H(\Gini\ORM\Inventory\Request::getStatusTitle($vRequest->status))?></span>
+                <?php if ($vRequest->status==\Gini\ORM\ChemicalLimits\Request::STATUS_PENDING) { ?>
+                <span><?=H(\Gini\ORM\ChemicalLimits\Request::getStatusTitle($vRequest->status))?></span>
                 <?php }?>
             </div>
             <?php if ($vRequest->approve_time && $vRequest->approve_man->id) {?>
