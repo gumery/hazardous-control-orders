@@ -8,7 +8,7 @@ class ChemicalLimits extends \Gini\Controller\CGI
     {
         $me = _G('ME');
         $group = _G('GROUP');
-        if (!$me->id && !$group->id) return;
+        if (!$me->id || !$group->id || !$me->isAllowedTo('设置')) return;
 
         $rpc = \Gini\Module\HazardousControlOrders::getRPC('chemical-limits');
         $result = $rpc->admin->inventory->searchGroupRequests([
@@ -34,9 +34,7 @@ class ChemicalLimits extends \Gini\Controller\CGI
     {
         $me = _G('ME');
         $group = _G('GROUP');
-        if (!$me->id && !$group->id) {
-            return false;
-        }
+        if (!$me->id || !$group->id || !$me->isAllowedTo('设置')) return;
 
         $types = \Gini\Module\HazardousControlOrders::getChemicalTypes();
         $view = 'settings/chemical-limits-request-modal';
@@ -49,14 +47,8 @@ class ChemicalLimits extends \Gini\Controller\CGI
     public function actionSearchChemical()
     {
         $me = _G('ME');
-        if (!$me->id) {
-            return;
-        }
-
         $group = _G('GROUP');
-        if (!$group->id) {
-            return;
-        }
+        if (!$me->id || !$group->id || !$me->isAllowedTo('设置')) return;
 
         $form = $this->form('post');
         if (empty($form) || !($q = trim($form['q'])) || !($type = trim($form['type']))) {
@@ -67,21 +59,26 @@ class ChemicalLimits extends \Gini\Controller\CGI
     public function actionSubmitApplication()
     {
         $me = _G('ME');
-        if (!$me->id) {
-            return;
-        }
-
         $group = _G('GROUP');
-        if (!$group->id) {
-            return;
-        }
+        if (!$me->id || !$group->id || !$me->isAllowedTo('设置')) return;
 
         $form = $this->form('post');
+        $type = trim($form['type']);
+        $casNO = trim($form['cas_no']);
+        $volume = trim($form['volume']);
 
-        return \Gini\IoC::construct('\Gini\CGI\Response\JSON', true);
-        // return \Gini\IoC::construct('\Gini\CGI\Response\JSON' ,[
-        // 		'code' => 1,
-        // 		'message' => 'success'
-        // 	]);
+        $rpc = \Gini\Module\HazardousControlOrders::getRPC('chemical-limits');
+        $result = (bool) $rpc->admin->inventory->addRequest([
+            'type'=> $type,
+            'cas_no'=> $casNO,
+            'volume'=> $volume,
+            'group_id'=> $group->id,
+            'owner_id'=> $me->id
+        ]);
+
+        return \Gini\IoC::construct('\Gini\CGI\Response\JSON', [
+            'code'=> $result ? 1 : 0,
+            'message'=> $result ? T('提交上限申请失败，请重试') : T('上限申请提交成功')
+        ]);
     }
 }

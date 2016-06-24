@@ -10,14 +10,14 @@
 					<div class="form-group">
 						<label><?=H(T('分类'))?></label>
 						<select class="form-control" name="type">
-							<option>--</option>
+							<option value="">--</option>
 							<?php foreach ($types as $key=>$type) {?>
 								<option value="<?=$key?>"><?=H(T("$type"))?></option>
 							<?php }?>
 						</select>
 						<label><?=H(T('化学品名称'))?></label>
-						<select class="form-control">
-							<option>--</option>
+						<select class="form-control" name="cas_no">
+							<option value="">--</option>
 						</select>
 						<label><?=H(T('上限'))?></label>
 						<input type="text" name="volume" class="form-control" />
