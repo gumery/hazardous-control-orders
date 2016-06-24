@@ -8,6 +8,8 @@ class Request extends \Gini\ORM\Mall\RObject
     public $type = 'string:20';
     // 化学品cas号
     public $cas_no = 'string:120';
+    // 化学品名称
+    public $name = 'string:150';
     // 课题组
     public $group  = 'object:group';
     // 申请上限
