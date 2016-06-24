@@ -7,9 +7,7 @@ class Request extends \Gini\ORM\Mall\RObject
     // 化学品分类
     public $type = 'string:20';
     // 化学品cas号
-    public $cas_no = 'string:40';
-    // 化学品名称
-    public $name = 'string:150';
+    public $cas_no = 'string:120';
     // 课题组
     public $group  = 'object:group';
     // 申请上限
@@ -24,9 +22,9 @@ class Request extends \Gini\ORM\Mall\RObject
     // 拒绝人
     public $reject_man = 'object:user';
     // 通过时间
-    public $pass_time = 'datetime';
+    public $approve_time = 'datetime';
     // 通过人
-    public $pass_man = 'object:user';
+    public $approve_man = 'object:user';
     // 修改时间
     public $mtime = 'datetime';
 
