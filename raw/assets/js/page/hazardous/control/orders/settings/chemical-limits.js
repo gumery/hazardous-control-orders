@@ -73,6 +73,7 @@ define('page/hazardous/control/orders/settings/chemical-limits', ['jquery', 'boo
         return options;
     }
 
+    var loadingDialog;
     var clearLoadingDialog = function() {
         if (!loadingDialog || ! loadingDialog.length) return;
         loadingDialog.prev('.modal-backdrop').remove();

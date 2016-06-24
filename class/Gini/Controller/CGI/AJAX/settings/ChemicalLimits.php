@@ -51,12 +51,15 @@ class ChemicalLimits extends \Gini\Controller\CGI
         if (!$me->id || !$group->id || !$me->isAllowedTo('设置')) return;
 
         $form = $this->form();
-        if (empty($form) || !($q = trim($form['q'])) || !($type = trim($form['type']))) {
+        $type = trim($form['type']);
+        if (empty($form) || !($q = trim($form['q']))) {
             return \Gini\IoC::construct('\Gini\CGI\Response\JSON', []);
         }
 
         $params['keyword'] = $q;
-        $params['type'] = $type;
+        if (!$type!=='') {
+            $params['type'] = $type;
+        }
 
         $data = [];
         try {
