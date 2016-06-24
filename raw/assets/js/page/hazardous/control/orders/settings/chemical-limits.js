@@ -25,7 +25,7 @@ define('page/hazardous/control/orders/settings/chemical-limits', ['jquery', 'boo
 
     function init() {
         $(".chemical-selectpicker").each(function(index, el) {
-            $(el).ajaxSelectPicker();
+            $(el).ajaxSelectPicker(initOptions());
         });
     }
 
