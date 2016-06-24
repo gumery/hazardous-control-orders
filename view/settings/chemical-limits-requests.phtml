@@ -35,8 +35,8 @@
             <?php } else if ($vRequest->reject_time && $vRequest->reject_man->id) {?>
             <div>
                 <?=H(T(':time :user 拒绝了 :owner 的申请', [
-                    ':time'=> $vRequest->approve_time,
-                    ':user'=> $vRequest->approve_man->name,
+                    ':time'=> $vRequest->reject_time,
+                    ':user'=> $vRequest->reject_man->name,
                     ':owner'=> $vRequest->owner->name
                 ]))?>
             </div>
