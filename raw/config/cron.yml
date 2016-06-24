@@ -1,0 +1,6 @@
+---
+check-inventory:
+  interval: 0 2 * * *
+  command: hazardouscontrol inventory checkremoteexists
+  comment: 每日检测未同步的危化品订单加入到存货
+...
