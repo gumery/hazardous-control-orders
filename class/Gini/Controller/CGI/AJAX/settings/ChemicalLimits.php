@@ -77,8 +77,8 @@ class ChemicalLimits extends \Gini\Controller\CGI
         ]);
 
         return \Gini\IoC::construct('\Gini\CGI\Response\JSON', [
-            'code'=> $result ? 1 : 0,
-            'message'=> $result ? T('提交上限申请失败，请重试') : T('上限申请提交成功')
+            'code'=> $result ? 0 : 1,
+            'message'=> $result ? T('上限申请提交成功') : T('提交上限申请失败，请重试')
         ]);
     }
 }
