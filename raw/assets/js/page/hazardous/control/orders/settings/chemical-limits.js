@@ -1,4 +1,4 @@
-define('page/hazardous/control/orders/settings/chemical-limits', ['jquery', 'bootstrap', 'bootbox', 'bootstrap-select', 'ajax-bootstrap-select'], function($, Bootstrap, Bootbox) {
+define('page/hazardous/control/orders/settings/chemical-limits', ['jquery', 'bootstrap', 'bootbox', 'bootstrap-select', 'ajax-bootstrap-select', 'css!../../../../../../css/hazardous-control-order-chemical-limits'], function($, Bootstrap, Bootbox) {
     function showDialog() {
         $.get('ajax/settings/chemical-limits/get-request-modal', function(data) {
             $(data).modal({
