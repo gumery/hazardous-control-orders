@@ -3,7 +3,7 @@
     <?=H(T('暂无数据'))?>
 </h4>
 <?php } else { ?>
-    <ul class="list-unstyled">
+    <ul>
     <?php foreach ($requests as $vRequest) {
             $vRequest = a('chemicallimits/request')->setData($vRequest);
         ?>
@@ -21,7 +21,7 @@
                     ':volume'=> $vRequest->volume,
                 ]))?>
                 <?php if ($vRequest->status==\Gini\ORM\ChemicalLimits\Request::STATUS_PENDING) { ?>
-                <span><?=H(\Gini\ORM\ChemicalLimits\Request::getStatusTitle($vRequest->status))?></span>
+                <span class="tag tag-red"><?=H(\Gini\ORM\ChemicalLimits\Request::getStatusTitle($vRequest->status))?></span>
                 <?php }?>
             </div>
             <?php if ($vRequest->approve_time && $vRequest->approve_man->id) {?>
@@ -41,7 +41,7 @@
                 ]))?>
             </div>
             <?php }?>
-        <li>
+        </li>
     <?php }?>
     </ul>
 	<ul class="list-unstyled text-center">
