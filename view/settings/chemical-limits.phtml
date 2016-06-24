@@ -1,73 +1,62 @@
-<div style="padding:20px">
-    <?php if (isset($form['success_message'])) { ?>
-    <div class="alert alert-success">
-        <?= H($form['success_message']); ?>
-    </div>
-    <?php } elseif (isset($form['error_message'])) { ?>
-    <div class="alert alert-error">
-        <?= H($form['error_message']); ?>
-    </div>
-    <?php } ?>
-    <h3 style="margin-top:0"><?= H(T('化学品库存上限')) ?></h3>
-    <hr>
-    <h4 class="text-primary"><?= H(T('上限概况'))?></h4>
-    <p class="text-muted"><?= H(T('根据各级管控标准, 您的化学品库存上限如下'))?></p>
-    <!-- 显示当前的采购上限设定 -->
-    <div class="container-fluid">
-        <h5><strong><?= H(T('化学品类别设定'))?></strong></h5>
-        <div class="">
-        <?php
-        $titles = [
-            'all' => '全部化学品',
-            'hazardous' => '危化品',
-            'drug_precursor' => '易制毒',
-            'explosive' => '易制爆',
-            'highly_toxic' => '剧毒品',
-        ];
+<div style="padding:20px;background:#f9f9f9;">
 
-        $type_count = 0;
-        foreach ($titles as $k => $title) {
-            if (!isset($limits[$k])) continue;
-            if ($limits[$k] !== '' && $limits[$k] !== null) {
-                echo '<div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0">'.H($title).' <span class="tag tag-red">'.H($limits[$k]).'</span></div>';
-                $type_count ++;
-            }
-            unset($limits[$k]);
-        }
-        
-        if (!$type_count) {
-            echo '<div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0"><span class="text-muted">'.H(T('未设定')).'</span></div>';
-        }
-        ?>
+    <h3 style="margin-top:0"><?= H(T('化学品库存上限')) ?></h3>
+    <hr/>
+
+    <div style="background:#fff; padding:20px;margin:20px 0;">
+        <h4 class="text-primary"><?= H(T('上限概况'))?></h4>
+        <p class="text-muted"><?= H(T('根据各级管控标准, 您的化学品库存上限如下'))?></p>
+        <div class="container-fluid">
+            <h5><strong><?= H(T('化学品类别设定'))?></strong></h5>
+            <div class="">
+            <?php
+            $titles = \Gini\Module\HazardousControlOrders::getChemicalTypes();
+            
+            foreach ($titles as $vK => $vTitle) { ?>
+                <div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0">
+                    <span><?=H($vTitle)?></span>
+                    <span class="tag tag-red"><?=H((string)$limits[$vK]==='' ? T('未设定') : $limits[$vK])?></span>
+                </div>
+            <?php 
+                unset($limits[$vK]);
+            } 
+            ?>
+            </div>
         </div>
-    </div>
-    <div class="container-fluid">
-        <h5><strong><?= H(T('个别化学品设定'))?></strong></h5>
-        <div class="">
-        <?php
-        $chemical_count = 0;
-        foreach ($limits as $k => $limit) {
-            $info = \Gini\ChemDB\Client::getChemicalInfo($k);
-            if (!$info) continue;
-            if ($limit !== '' && $limit !== null) {
-                echo '<div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0">'.H($info['name']).' <span class="tag tag-red">'.H($limit).'</span></div>';
+        <div class="container-fluid">
+            <h5><strong><?= H(T('个别化学品设定'))?></strong></h5>
+            <div class="">
+            <?php
+            $chemical_count = 0;
+            foreach ($limits as $vCasNO => $vVolume) {
+                $vInfo = \Gini\ChemDB\Client::getChemicalInfo($CasNO);
+                if (empty($vInfo)) continue;
+                if ((string)$vVolume==='') continue;
                 $chemical_count ++;
-            }
-        }
-        
-        if (!$chemical_count) {
-            echo '<div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0"><span class="text-muted">'.H(T('未设定')).'</span></div>';
-        }
-        ?>
+            ?>
+                <div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0">
+                    <span><?=H($vInfo['name'])?></span>
+                    <span class="tag tag-red"><?=H($vVolume)?></span>
+                </div>
+            <?php }?>
+            
+            <?php if (!$chemical_count) { ?>
+                <div style="display:inline-block;background-color:#eee;padding:5px 10px 2px;margin:0 5px 5px 0">
+                    <span class="text-muted"><?=H(T('未设定'))?></span>
+                </div>
+            <?php }?>
+            </div>
         </div>
     </div>
-    <!-- 提出申请 -->
-    <h4 class="text-primary"><?= H(T('上限调整申请'))?></h4>
-    <p class="text-muted"><?= H(T('如果您所在的课题组有特殊需求, 可在此提出申请'))?>:</p>
-    <div class="form-group">
-        <textarea class="form-control"></textarea>
+
+    <div style="background:#fff;padding:20px;margin:20px 0;">
+        <button data-require="page/hazardous/control/orders/settings/chemical-limits" class="app-handler-append-limit-request pull-right btn btn-primary btn-sm"><i class="fa fa-fw fa-plus-circle"></i> <?= H(T('上限申请'))?></button>
+        <h4 class="text-primary"><?= H(T('上限调整申请'))?></h4>
+        <p class="text-muted"><?= H(T('如果您所在的课题组有特殊需求, 可在此提出申请'))?></p>
     </div>
-    <div class="form-group">
-        <button class="btn btn-primary"><?= H(T('提交'))?></button>
+
+    <div style="margin:20px 0;">
+        <h4 class="text-muted"><?= H(T('申请审批记录'))?></h4>
+        <?=$requestsHTML?>
     </div>
 </div>

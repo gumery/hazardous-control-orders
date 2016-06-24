@@ -112,6 +112,19 @@ class HazardousControlOrders
         $e->pass();
     }
 
+    public static function getChemicalTypes() {
+
+        $types = [
+            'all' => '全部化学品',
+            'hazardous' => '危化品',
+            'drug_precursor' => '易制毒',
+            'explosive' => '易制爆',
+            'highly_toxic' => '剧毒品'
+        ];
+
+        return $types;   
+    }
+
     protected static $_RPCs = [];
     public static function getRPC($type = 'lab-inventory')
     {
