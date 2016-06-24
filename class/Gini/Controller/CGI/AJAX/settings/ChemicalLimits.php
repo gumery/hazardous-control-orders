@@ -57,7 +57,7 @@ class ChemicalLimits extends \Gini\Controller\CGI
         }
 
         $params['keyword'] = $q;
-        if (!$type!=='') {
+        if ($type!=='' && $type!=\Gini\ORM\ChemicalLimits\Request::CAS_DEFAULT_ALL) {
             $params['type'] = $type;
         }
 
