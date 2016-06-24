@@ -50,10 +50,30 @@ class ChemicalLimits extends \Gini\Controller\CGI
         $group = _G('GROUP');
         if (!$me->id || !$group->id || !$me->isAllowedTo('设置')) return;
 
-        $form = $this->form('post');
+        $form = $this->form();
         if (empty($form) || !($q = trim($form['q'])) || !($type = trim($form['type']))) {
             return \Gini\IoC::construct('\Gini\CGI\Response\JSON', []);
         }
+
+        $params['keyword'] = $q;
+        $params['type'] = $type;
+
+        $data = [];
+        try {
+            $rpc = \Gini\ChemDB\Client::getRPC();
+            $result = $rpc->chemdb->searchChemicals($params);
+            $chems = (array)$rpc->chemdb->getChemicals($result['token']);
+            foreach ($chems as $chem) {
+                $data[] = [
+                    'key'=> $chem['cas_no'],
+                    'value'=> $chem['name']
+                ];
+            }
+        } 
+        catch (\Exception $e) {
+        }
+
+        return \Gini\IoC::construct('\Gini\CGI\Response\JSON', $data);
     }
 
     public function actionSubmitApplication()
