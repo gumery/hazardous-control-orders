@@ -1,4 +1,4 @@
-define('page/hazardous/control/orders/settings/chemical-limits', ['jquery', 'bootstrap'], function($) {
+define('page/hazardous/control/orders/settings/chemical-limits', ['jquery', 'bootstrap', 'bootbox'], function($, Bootstrap, Bootbox) {
     function showDialog() {
         $.get('ajax/settings/chemical-limits/get-request-modal', function(data) {
             $(data).modal({
@@ -10,6 +10,7 @@ define('page/hazardous/control/orders/settings/chemical-limits', ['jquery', 'boo
 
     $(document).on('click', '.app-handler-append-limit-request', showDialog);
     $(document).on('submit', '.form-setting-requset-application-volume', function() {
+        showLoadingDialog();
         var $form = $(this);
         var url = $form.attr('action');
         $.post(url, $form.serialize(), function(data) {
@@ -18,12 +19,16 @@ define('page/hazardous/control/orders/settings/chemical-limits', ['jquery', 'boo
                 window.location.reload();
                 return;
             }
+            clearLoadingDialog();
             Bootbox.alert(data.message);
         });
         return false;
     });
 
     function init() {
+        $(".selectpicker").selectpicker({
+            style: 'btn-blank'
+        });
         $(".chemical-selectpicker").each(function(index, el) {
             $(el).ajaxSelectPicker(initOptions());
         });
@@ -67,6 +72,20 @@ define('page/hazardous/control/orders/settings/chemical-limits', ['jquery', 'boo
         };
         return options;
     }
+
+    var clearLoadingDialog = function() {
+        if (!loadingDialog || ! loadingDialog.length) return;
+        loadingDialog.prev('.modal-backdrop').remove();
+        loadingDialog.remove();
+    };
+    var showLoadingDialog = function() {
+        clearLoadingDialog();
+        loadingDialog = $('<div class="modal"><div class="modal-dialog"><div class="modal-content"><h2 class="text-center"><span class="fa fa-spinner fa-spin fa-2x"></span></h2></div></div></div>');
+        loadingDialog.modal({
+            show: true
+            ,backdrop: 'static'
+        });
+    };
 
     return {
         loopMe: init
