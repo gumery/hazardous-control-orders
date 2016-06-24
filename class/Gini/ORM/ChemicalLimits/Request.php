@@ -37,7 +37,7 @@ class Request extends \Gini\ORM\Mall\RObject
     // 待审核
     const STATUS_PENDING = 0;
     // 审核通过
-    const STATUS_PASSED = 1;
+    const STATUS_APPROVED = 1;
     // 审核失败
     const STATUS_REJECTED = 2;
 
