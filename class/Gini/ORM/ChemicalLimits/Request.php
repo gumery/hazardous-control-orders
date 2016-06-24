@@ -43,5 +43,31 @@ class Request extends \Gini\ORM\Mall\RObject
     // 审核失败
     const STATUS_REJECTED = 2;
 
+    public static function getStatusTitle($status)
+    {
+        $titles = [
+            self::STATUS_PENDING=> T('待审核'),
+            self::STATUS_APPROVED=> T('已通过'),
+            self::STATUS_REJECTED=> T('已拒绝'),
+        ];
+        return $titles[$status];
+    }
+
+    const CAS_DEFAULT_ALL   = 'all';
+    const CAS_DEFAULT_HAZ   = 'hazardous';
+    const CAS_DEFAULT_DRUG  = 'drug_precursor';
+    const CAS_DEFAULT_TOXIC = 'highly_toxic';
+    const CAS_DEFAULT_EXP   = 'explosive';
+
+    public static function getTypeTtile($type) {
+        $titles = [
+            self::CAS_DEFAULT_ALL   => T('全部'),
+            self::CAS_DEFAULT_HAZ   => T('危化品'),
+            self::CAS_DEFAULT_DRUG  => T('易制毒'),
+            self::CAS_DEFAULT_TOXIC => T('剧毒品'),
+            self::CAS_DEFAULT_EXP   => T('易制爆'),
+        ];
+        return $titles[$type];
+    }
 }
 
