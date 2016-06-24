@@ -41,10 +41,10 @@ define('page/hazardous/control/orders/settings/chemical-limits', ['jquery', 'boo
                 ,type: 'GET'
                 ,dataType: 'json'
                 ,data: function() {
-                    var form = $('.form-setting-requset-application-volume').serialize();
+                    var type = $('.form-setting-requset-application-volume select[name=type]').val();
                     var params = {
                         q: '{{{q}}}'
-                        ,post: form
+                        ,type: type
                     };
                     return params;
                 }
