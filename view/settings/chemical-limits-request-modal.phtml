@@ -15,10 +15,14 @@
 								<option value="<?=$key?>"><?=H(T("$type"))?></option>
 							<?php }?>
 						</select>
+					</div>
+					<div class="form-group">
 						<label><?=H(T('化学品名称'))?></label>
 						<select class="form-control chemical-selectpicker selectpicker" name="cas_no" data-live-search="true">
 							<option value="">--</option>
 						</select>
+					</div>
+					<div class="form-group">
 						<label><?=H(T('上限'))?></label>
 						<input type="text" name="volume" class="form-control" />
 					</div>
