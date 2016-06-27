@@ -7,9 +7,9 @@
     <?php foreach ($requests as $vRequest) {
             $vRequest = a('chemicallimits/request')->setData($vRequest);
         ?>
-        <li>
+        <li style="list-style-type:circle;">
             <dl>
-                <dt>
+                <dt style="font-weight:normal; margin:10px 0 5px;">
                     <?=$vRequest->cas_no ? H(T(':ctime :owner 申请了 :cas 上限到 :volume', [
                         ':ctime'=> $vRequest->ctime,
                         ':owner'=> $vRequest->owner->name,
@@ -25,11 +25,13 @@
                     <span class="tag tag-red"><?=H(\Gini\ORM\ChemicalLimits\Request::getStatusTitle($vRequest->status))?></span>
                     <?php }?>
                 </dt>
-                <dd>
+                <?php if ($vRequest->reason) {?>
+                <dd style="padding:3px 5px;margin:3px;background:#FAFAFA;">
                     <?=H($vRequest->reason)?>
                 </dd>
+                <?php }?>
                 <?php if ($vRequest->approve_time && $vRequest->approve_man->id) {?>
-                <dd>
+                <dd style="padding:3px 5px;margin:3px;background:#FAFAFA;">
                     <?=H(T(':time :user 批准了 :owner 的申请', [
                         ':time'=> $vRequest->approve_time,
                         ':user'=> $vRequest->approve_man->name,
@@ -37,7 +39,7 @@
                     ]))?>
                 </dd>
                 <?php } else if ($vRequest->reject_time && $vRequest->reject_man->id) {?>
-                <dd>
+                <dd style="padding:3px 5px;margin:3px;background:#FAFAFA;">
                     <?=H(T(':time :user 拒绝了 :owner 的申请', [
                         ':time'=> $vRequest->reject_time,
                         ':user'=> $vRequest->reject_man->name,
