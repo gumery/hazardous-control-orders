@@ -118,7 +118,7 @@ class ChemicalLimits extends \Gini\Controller\CGI
         } else {
             $chem = ['default'];
         }
-        if (!(\Gini\Unit\Conversion::of($chem)->validate($casNO ?: $type))) {
+        if (!(\Gini\Unit\Conversion::of($chem)->validate($volume))) {
             return \Gini\IoC::construct('\Gini\CGI\Response\JSON', [
                 'code'=> 4,
                 'message'=> T('上限设置格式错误，请输入数字＋单位，例5mg（目前系统支持单位: 瓶/bottle/ml/g/cm3/ul/μl/ml/cl/dl/l/gal/lb/ug/μg/mg/kg/oz/lb/）')
