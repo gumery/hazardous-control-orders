@@ -3,6 +3,7 @@
     <?=H(T('暂无数据'))?>
 </h4>
 <?php } else { ?>
+<div class="app-page-more-content">
     <ul>
     <?php foreach ($requests as $vRequest) {
             $vRequest = a('chemicallimits/request')->setData($vRequest);
@@ -60,14 +61,14 @@
 		}
 	?>
 	<?php if ($vPFrom!=1) {?>
-		<li data-start="0" class="app-handler-stat-page app-pager-li-handler<?=($page==1) ? ' app-pager-li-active' : ''?>"><?=H(T('首页'))?></li>
+        <li data-page="<?=H($page)?>" class="app-handler-stat-page app-pager-li-handler<?=($page==1) ? ' app-pager-li-active' : ''?>"><?=H(T('首页'))?></li>
 	<?php }?>
 	<?php for ($i=$vPFrom; $i<=$vPTo; $i++) {?>
-		<li data-start="<?=H($perpage * ($i-1))?>" class="app-handler-stat-page app-pager-li-handler<?=($page==$i) ? ' app-pager-li-active' : ''?>"><?=H($i)?></li>
+		<li data-page="<?=H($i)?>" class="app-handler-stat-page app-pager-li-handler<?=($page==$i) ? ' app-pager-li-active' : ''?>"><?=H($i)?></li>
 	<?php }?>
 	<?php if ($vPTo!=$total) {?>
-		<li data-start="<?=H($perpage * ($total-1))?>" class="app-handler-stat-page app-pager-li-handler<?=($page==$total) ? ' app-pager-li-active' : ''?>"><?=H(T('尾页'))?></li>
+		<li data-page="<?=H($total)?>" class="app-handler-stat-page app-pager-li-handler<?=($page==$total) ? ' app-pager-li-active' : ''?>"><?=H(T('尾页'))?></li>
 	<?php }?>
-	</ul>
+    </ul>
+</div>
 <?php } ?>
-
