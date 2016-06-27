@@ -29,7 +29,7 @@
             <?php
             $chemical_count = 0;
             foreach ($limits as $vCasNO => $vVolume) {
-                $vInfo = \Gini\ChemDB\Client::getChemicalInfo($CasNO);
+                $vInfo = \Gini\ChemDB\Client::getChemicalInfo($vCasNO);
                 if (empty($vInfo)) continue;
                 if ((string)$vVolume==='') continue;
                 $chemical_count ++;
