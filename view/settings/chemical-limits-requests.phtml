@@ -61,13 +61,25 @@
 		}
 	?>
 	<?php if ($vPFrom!=1) {?>
-        <li data-page="<?=H($page)?>" class="app-handler-stat-page app-pager-li-handler<?=($page==1) ? ' app-pager-li-active' : ''?>"><?=H(T('首页'))?></li>
+        <li class="app-pager-li-handler<?=($page==1) ? ' app-pager-li-active' : ''?>">
+            <a href="settings/chemical-limits/1">
+            <?=H(T('首页'))?>
+            </a>
+        </li>
 	<?php }?>
 	<?php for ($i=$vPFrom; $i<=$vPTo; $i++) {?>
-		<li data-page="<?=H($i)?>" class="app-handler-stat-page app-pager-li-handler<?=($page==$i) ? ' app-pager-li-active' : ''?>"><?=H($i)?></li>
+        <li class="app-pager-li-handler<?=($page==$i) ? ' app-pager-li-active' : ''?>">
+            <a href="settings/chemical-limits/<?=H($i)?>">
+            <?=H($i)?>
+            </a>
+        </li>
 	<?php }?>
 	<?php if ($vPTo!=$total) {?>
-		<li data-page="<?=H($total)?>" class="app-handler-stat-page app-pager-li-handler<?=($page==$total) ? ' app-pager-li-active' : ''?>"><?=H(T('尾页'))?></li>
+        <li class="app-pager-li-handler<?=($page==$total) ? ' app-pager-li-active' : ''?>">
+            <a href="settings/chemical-limits/<?=H($total)?>">
+            <?=H(T('尾页'))?>
+            </a>
+        </li>
 	<?php }?>
     </ul>
 </div>
