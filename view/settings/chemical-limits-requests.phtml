@@ -11,17 +11,17 @@
         <li style="list-style-type:circle;">
             <dl>
                 <dt style="font-weight:normal; margin:10px 0 5px;">
-                    <?=$vRequest->cas_no ? H(T(':ctime :owner 申请了 :cas 上限到 :volume', [
+                    <?=$vRequest->cas_no ? T(':ctime :owner 申请了 :cas 上限到 :volume', [
                         ':ctime'=> $vRequest->ctime,
-                        ':owner'=> $vRequest->owner->name,
-                        ':cas'=> $vRequest->name ?: $vRequest->cas_no,
-                        ':volume'=> $vRequest->volume,
-                    ])) : H(T(':ctime :owner 申请了 :type 上限到 :volume', [
+                        ':owner'=> '<strong>'.$vRequest->owner->name.'</strong>',
+                        ':cas'=> '<strong>'.$vRequest->name.'</strong>',
+                        ':volume'=> '<strong>'.$vRequest->volume.'</strong>',
+                    ]) : T(':ctime :owner 申请了 :type 上限到 :volume', [
                         ':ctime'=> $vRequest->ctime,
-                        ':owner'=> $vRequest->owner->name,
-                        ':type'=> \Gini\ORM\ChemicalLimits\Request::getTypeTtile($vRequest->type),
-                        ':volume'=> $vRequest->volume,
-                    ]))?>
+                        ':owner'=> '<strong>'.$vRequest->owner->name.'</strong>',
+                        ':type'=> '<strong>'.\Gini\ORM\ChemicalLimits\Request::getTypeTtile($vRequest->type).'</strong>',
+                        ':volume'=> '<strong>'.$vRequest->volume.'</strong>',
+                    ])?>
                     <?php if ($vRequest->status==\Gini\ORM\ChemicalLimits\Request::STATUS_PENDING) { ?>
                     <span class="tag tag-red"><?=H(\Gini\ORM\ChemicalLimits\Request::getStatusTitle($vRequest->status))?></span>
                     <?php }?>
@@ -33,19 +33,19 @@
                 <?php }?>
                 <?php if ($vRequest->approve_time && $vRequest->approve_man->id) {?>
                 <dd style="padding:3px 5px;margin:3px;background:#FFF;">
-                    <?=H(T(':time :user 批准了 :owner 的申请', [
+                    <?=T(':time :user 批准了 :owner 的申请', [
                         ':time'=> $vRequest->approve_time,
-                        ':user'=> $vRequest->approve_man->name,
-                        ':owner'=> $vRequest->owner->name
-                    ]))?>
+                        ':user'=> '<strong>'.$vRequest->approve_man->name.'</strong>',
+                        ':owner'=> '<strong>'.$vRequest->owner->name.'</strong>'
+                    ])?>
                 </dd>
                 <?php } else if ($vRequest->reject_time && $vRequest->reject_man->id) {?>
                 <dd style="padding:3px 5px;margin:3px;background:#FFF;">
-                    <?=H(T(':time :user 拒绝了 :owner 的申请', [
+                    <?=T(':time :user 拒绝了 :owner 的申请', [
                         ':time'=> $vRequest->reject_time,
-                        ':user'=> $vRequest->reject_man->name,
-                        ':owner'=> $vRequest->owner->name
-                    ]))?>
+                        ':user'=> '<strong>'.$vRequest->reject_man->name.'</strong>',
+                        ':owner'=> '<strong>'.$vRequest->owner->name.'</strong>'
+                    ])?>
                 </dd>
                 <?php }?>
             </dl>
