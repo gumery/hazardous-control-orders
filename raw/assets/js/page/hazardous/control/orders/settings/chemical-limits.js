@@ -92,7 +92,7 @@ define('page/hazardous/control/orders/settings/chemical-limits', ['jquery', 'boo
         var $that = $(this);
         var page = $that.attr('data-page') || 1;
         showLoadingDialog();
-        $.get(['ajax/settings/chemical-limits/request-more', page].join('/'), {
+        $.get(['ajax/settings/chemical-limits/requests-more', page].join('/'), {
             _t: (new Date()).getTime()
         }, function(result) {
             if (result) {
