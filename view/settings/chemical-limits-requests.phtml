@@ -24,6 +24,9 @@
                 <span class="tag tag-red"><?=H(\Gini\ORM\ChemicalLimits\Request::getStatusTitle($vRequest->status))?></span>
                 <?php }?>
             </div>
+            <div>
+                <?=H($vRequest->reason)?>
+            </div>
             <?php if ($vRequest->approve_time && $vRequest->approve_man->id) {?>
             <div>
                 <?=H(T(':time :user 批准了 :owner 的申请', [
