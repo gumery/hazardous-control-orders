@@ -366,15 +366,15 @@ class RelationshipOP extends \Gini\Controller\CLI
         if (isset(self::$data[$cas])) {
             $data = self::$data[$cas];
         } else {
-            self::$data[$cas] = $data = (array) \Gini\ChemDB\Client::getProduct($cas);
+            self::$data[$cas] = $data = (array) \Gini\ChemDB\Client::getChemicalInfo($cas);
         }
         if (empty($data)) {
             return $name;
         }
         if ($type) {
-            foreach ($data as $d) {
-                if ($d['type'] == $type) {
-                    return $d['name'];
+            foreach ($data['types'] as $d) {
+                if ($d == $type) {
+                    return $data['name'];
                 }
             }
         }
@@ -483,12 +483,10 @@ class RelationshipOP extends \Gini\Controller\CLI
             if (isset(self::$data[$cas])) {
                 $data = self::$data[$cas];
             } else {
-                self::$data[$cas] = $data = \Gini\ChemDB\Client::getProduct($cas);
+                self::$data[$cas] = $data = \Gini\ChemDB\Client::getChemicalInfo($cas);
             }
             if (is_array($data)) {
-                foreach ($data as $d) {
-                    $result[] = $d['type'];
-                }
+                $result[] = $data['types'];
                 $result[] = $type;
             }
             if (!empty($result)) {

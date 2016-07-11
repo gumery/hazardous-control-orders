@@ -122,7 +122,7 @@ class HazardousControlOrders
             'highly_toxic' => '剧毒品'
         ];
 
-        return $types;   
+        return $types;
     }
 
     protected static $_RPCs = [];
@@ -131,7 +131,6 @@ class HazardousControlOrders
         $confs = \Gini\Config::get('mall.rpc');
         $conf = $confs[$type] ?: [];
         if (!self::$_RPCs[$type]) {
-            error_log($type.': '.$conf['url']);
             $rpc = \Gini\IoC::construct('\Gini\RPC', $conf['url']);
             self::$_RPCs[$type] = $rpc;
             $client = \Gini\Config::get('mall.client');
