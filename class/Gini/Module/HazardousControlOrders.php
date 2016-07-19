@@ -29,12 +29,11 @@ class HazardousControlOrders
             $e->pass();
             return;
         }
-        $conf    = \Gini\Config::get('app.rpc');
-        $client  = \Gini\Config::get('app.client');
-        $url     = $conf['lab-inventory']['url'];
-        $rpc     = \Gini\IoC::construct('\Gini\RPC', $url);
+        $confs    = \Gini\Config::get('app.rpc');
+        $conf     = $confs['lab-inventory'];
+        $rpc      = \Gini\IoC::construct('\Gini\RPC', $conf['url']);
         $group_id = $group->id;
-        $token   = $rpc->mall->authorize($client['id'], $client['secret']);
+        $token    = $rpc->mall->authorize($conf['client_id'], $conf['client_id']);
         if (!$token) {
             $e->abort();
             return ['error' => H(T('存货管理连接中断'))];
@@ -133,13 +132,12 @@ class HazardousControlOrders
         if (!self::$_RPCs[$type]) {
             $rpc = \Gini\IoC::construct('\Gini\RPC', $conf['url']);
             self::$_RPCs[$type] = $rpc;
-            $client = \Gini\Config::get('app.client');
             if ($type == 'lab-inventory') {
-                $token = $rpc->mall->authorize($client['id'], $client['secret']);
+                $token = $rpc->mall->authorize($conf['client_id'], $conf['client_secret']);
                 if (!$token) {
                     \Gini\Logger::of('lab-orders')
                         ->error('Mall\\RObject getRPC: authorization failed with {client_id}/{client_secret} !',
-                            [ 'client_id' => $client['id'], 'client_secret' => $client['secret']]);
+                            [ 'client_id' => $conf['client_id'], 'client_secret' => $conf['client_secret']]);
                 }
             }
         }

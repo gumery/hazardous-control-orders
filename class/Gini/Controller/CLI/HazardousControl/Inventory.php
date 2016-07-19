@@ -12,11 +12,8 @@ class Inventory extends \Gini\Controller\CLI
         $confs = \Gini\Config::get('app.rpc');
         $conf = (array)$confs['lab-inventory'];
         $url = $conf['url'];
-        $client = \Gini\Config::get('app.client');
-        $clientID = $client['id'];
-        $clientSecret = $client['secret'];
         $rpc = \Gini\IoC::construct('\Gini\RPC', $url);
-        if (!$rpc->mall->authorize($clientID, $clientSecret)) {
+        if (!$rpc->mall->authorize($conf['client_id'], $conf['client_secret'])) {
             return;
         }
         self::$rpc = $rpc;
