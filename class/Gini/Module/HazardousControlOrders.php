@@ -33,7 +33,7 @@ class HazardousControlOrders
         $conf     = $confs['lab-inventory'];
         $rpc      = \Gini\IoC::construct('\Gini\RPC', $conf['url']);
         $group_id = $group->id;
-        $token    = $rpc->mall->authorize($conf['client_id'], $conf['client_id']);
+        $token    = $rpc->mall->authorize($conf['client_id'], $conf['client_secret']);
         if (!$token) {
             $e->abort();
             return ['error' => H(T('存货管理连接中断'))];
@@ -151,9 +151,9 @@ class HazardousControlOrders
         $key = "haz-conf[$cas_no][$group_id]";
         $conf = $cache->get($key);
         if (false === $conf) {
-            $rpc = self::getRPC('hazardous-control');
+            $rpc = self::getRPC('chemical-limits');
             $criteria = ['cas_no'=>$cas_no, 'group_id'=>$group_id];
-            $conf = $rpc->inventory->getHazConf($criteria);
+            $conf = $rpc->admin->inventory->getHazConf($criteria);
             $cache->set($key, $conf, 15);
         }
         return $conf;
@@ -167,9 +167,9 @@ class HazardousControlOrders
         $key = "cas-volume-limit[$cas_no][$group_id]";
         $volume = $cache->get($key);
         if (false === $volume) {
-            $rpc = self::getRPC('hazardous-control');
+            $rpc = self::getRPC('chemical-limits');
             $criteria = ['cas_no'=>$cas_no, 'group_id'=>$group_id];
-            $volume = $rpc->inventory->getLimitVolume($criteria);
+            $volume = $rpc->admin->inventory->getLimitVolume($criteria);
             $cache->set($key, $volume, 5);
         }
         return ['volume'=>$volume];
