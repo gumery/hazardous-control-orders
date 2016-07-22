@@ -169,7 +169,7 @@ class HazardousControlOrders
         if (false === $volume) {
             $rpc = self::getRPC('chemical-limits');
             $criteria = ['cas_no'=>$cas_no, 'group_id'=>$group_id];
-            $volume = $rpc->admin->inventory->getLimitVolume($criteria);
+            $volume = $rpc->admin->inventory->getLimit($criteria);
             $cache->set($key, $volume, 5);
         }
         return ['volume'=>$volume];
