@@ -15,10 +15,11 @@ class APP extends \Gini\Controller\API\HazardousControl\Base
 
     public function actionAuthorize($clientID, $clientSecret)
     {
-        $conf = \Gini\Config::get('gapper.rpc');
+        $confs = \Gini\Config::get('mall.rpc');
+        $conf = $confs['node'];
         try {
             $rpc = \Gini\IoC::construct('\Gini\RPC', $conf['url']);
-            $bool = $rpc->gapper->app->authorize($clientID, $clientSecret);
+            $bool = $rpc->mall->authorize($clientID, $clientSecret);
         }
         catch (\Exception $e) {
             throw new \Gini\API\Exception('网络故障', 503);
