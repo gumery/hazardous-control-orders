@@ -170,6 +170,8 @@ class Order extends \Gini\Controller\API\HazardousControl\Base
                 'drug_precursor',
                 'highly_toxic',
                 'explosive',
+                'psychotropic',
+                'narcotic',
             ];
             if (in_array($criteria['product_type'], $chem_types)) {
                 $product_type = $criteria['product_type'];

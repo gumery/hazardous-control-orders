@@ -58,6 +58,8 @@ class Request extends \Gini\ORM\Mall\RObject
     const CAS_DEFAULT_DRUG  = 'drug_precursor';
     const CAS_DEFAULT_TOXIC = 'highly_toxic';
     const CAS_DEFAULT_EXP   = 'explosive';
+    const CAS_DEFAULT_PSY = 'psychotropic';
+    const CAS_DEFAULT_NAR = 'narcotic';
 
     public static function getTypeTtile($type) {
         $titles = [
@@ -66,6 +68,8 @@ class Request extends \Gini\ORM\Mall\RObject
             self::CAS_DEFAULT_DRUG  => T('易制毒'),
             self::CAS_DEFAULT_TOXIC => T('剧毒品'),
             self::CAS_DEFAULT_EXP   => T('易制爆'),
+            self::CAS_DEFAULT_PSY => T('精神药品'),
+            self::CAS_DEFAULT_NAR => T('麻醉药品'),
         ];
         return $titles[$type];
     }

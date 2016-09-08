@@ -55,7 +55,7 @@ class Inventory extends \Gini\Controller\CLI
                                 $result : '100-19-2'=>[hazardous, highly_toxic]
                             */
                             $hazs = ['drug_precursor','highly_toxic',
-                            'hazardous','explosive'];
+                            'hazardous','explosive', 'psychotropic', 'narcotic'];
                             if (count(array_intersect($hazs, $result))) {
                                 $criteria                  = [];
                                 $criteria['order_voucher'] = $order->voucher;

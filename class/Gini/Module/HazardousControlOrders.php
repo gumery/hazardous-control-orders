@@ -118,7 +118,9 @@ class HazardousControlOrders
             'hazardous' => '危化品',
             'drug_precursor' => '易制毒',
             'explosive' => '易制爆',
-            'highly_toxic' => '剧毒品'
+            'highly_toxic' => '剧毒品',
+            'psychotropic'=> '精神药品',
+            'narcotic'=> '麻醉药品',
         ];
 
         return $types;
