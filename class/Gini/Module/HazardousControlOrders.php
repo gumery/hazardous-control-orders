@@ -96,7 +96,7 @@ class HazardousControlOrders
 
                 if ($sum > $lNum) {
                     $data[] = [
-                        'reason' => H(T('超出该商品的管控上限')),
+                        'reason' => H(T('当前存量为:sumg ，管制上限为:lNumg，超过该商品的管制上限，请减少存量后再进行购买', [':sum' => $sum, ':lNum' => $lNum])),
                         'id' => $info['id'],
                         'name' => $product->name
                     ];
