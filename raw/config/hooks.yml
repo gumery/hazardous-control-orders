@@ -2,3 +2,5 @@ cart.get-unable-products:
 - callback:\Gini\Module\HazardousControlOrders::getUnableProducts
 header.settings-menu:
 - callback:\Gini\Module\HazardousControlOrders::headerSettingsMenu
+header.top-menu:
+- callback:\Gini\Module\HazardousControlOrders::headerTopMenu
