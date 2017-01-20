@@ -33,18 +33,20 @@
                 <?php }?>
                 <?php if ($vRequest->approve_time && $vRequest->approve_man->id) {?>
                 <dd style="padding:3px 5px;margin:3px;background:#FFF;">
-                    <?=T(':time :user 批准了 :owner 的申请', [
+                    <?=T(':time :user 批准了 :owner 的申请: :note', [
                         ':time'=> $vRequest->approve_time,
                         ':user'=> '<strong>'.$vRequest->approve_man->name.'</strong>',
-                        ':owner'=> '<strong>'.$vRequest->owner->name.'</strong>'
+                        ':owner'=> '<strong>'.$vRequest->owner->name.'</strong>',
+                        ':note'=> $vRequest->approve_note ?: '--'
                     ])?>
                 </dd>
                 <?php } else if ($vRequest->reject_time && $vRequest->reject_man->id) {?>
                 <dd style="padding:3px 5px;margin:3px;background:#FFF;">
-                    <?=T(':time :user 拒绝了 :owner 的申请', [
+                    <?=T(':time :user 拒绝了 :owner 的申请: :note', [
                         ':time'=> $vRequest->reject_time,
                         ':user'=> '<strong>'.$vRequest->reject_man->name.'</strong>',
-                        ':owner'=> '<strong>'.$vRequest->owner->name.'</strong>'
+                        ':owner'=> '<strong>'.$vRequest->owner->name.'</strong>',
+                        ':note'=> $vRequest->reject_note ?: '--'
                     ])?>
                 </dd>
                 <?php }?>
