@@ -40,10 +40,15 @@ class HazardousControlOrders
         }
 
         $newTNS = [];
+        $errorCas = [];
         foreach ($products as $info) {
             if ($info['customized']) continue;
             $product = a('product', $info['id']);
             if (!$product->cas_no) continue;
+
+            if (in_array($product->cas_no, $errorCas)) {
+                continue;
+            }
 
             $cas_no  = $product->cas_no;
             $package = $product->package;
@@ -92,14 +97,16 @@ class HazardousControlOrders
                 $conf = self::_getHazConf($cas_no, $group_id);
                 $count_cart = $conf['count_cart'];
                 $iNum = $i->from($idata['volume'])->to('g');
+
                 $sum = $iNum;
-                $newTNS[$cas_no] += $sum;
+                $newTNS[$cas_no] = $newTNS[$cas_no] ?: $sum;
                 if ($count_cart) {
                     $pNum = $i->from($pdata['volume'])->to('g');
                     $newTNS[$cas_no] += $pNum;
                 }
 
                 if ($newTNS[$cas_no] > $lNum) {
+                    $errorCas[] = $cas_no;
                     $data[] = [
                         'reason' => H(T('当前存量为:sumg ，管制上限为:lNumg，新购买的商品量将导致存量超过该商品的管制上限，请减少存量后再进行购买', [':sum' => $sum, ':lNum' => $lNum])),
                         'id' => $info['id'],
