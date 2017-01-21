@@ -38,10 +38,13 @@ class HazardousControlOrders
             $e->abort();
             return ['error' => H(T('存货管理连接中断'))];
         }
+
+        $newTNS = 0;
         foreach ($products as $info) {
             if ($info['customized']) continue;
             $product = a('product', $info['id']);
             if (!$product->cas_no) continue;
+
             $cas_no  = $product->cas_no;
             $package = $product->package;
             $i       = \Gini\Unit\Conversion::of($product);
@@ -54,8 +57,9 @@ class HazardousControlOrders
                     ];
             }
             $volume = $ldata['volume'];
-            $lNum = $i->from($volume)->to('g');
             if ((string)$volume === '') continue;
+
+            $lNum = $i->from($volume)->to('g');
             // 如果设置为0不允许购买
             if ((string)$lNum === '0') {
                 $data[] = [
@@ -74,6 +78,7 @@ class HazardousControlOrders
                     ];
                     continue;
                 }
+
                 $idata = self::_getInventoryVolume($cas_no, $group_id);
                 if ($idata['error']) {
                     $data[] = [
@@ -83,6 +88,7 @@ class HazardousControlOrders
                     ];
                     continue;
                 }
+
                 $conf = self::_getHazConf($cas_no, $group_id);
                 $count_cart = $conf['count_cart'];
                 $iNum = $i->from($idata['volume'])->to('g');
@@ -94,9 +100,10 @@ class HazardousControlOrders
                     $sum = $iNum;
                 }
 
-                if ($sum > $lNum) {
+                $newTNS += $sum;
+                if ($newTNS > $lNum) {
                     $data[] = [
-                        'reason' => H(T('当前存量为:sumg ，管制上限为:lNumg，超过该商品的管制上限，请减少存量后再进行购买', [':sum' => $sum, ':lNum' => $lNum])),
+                        'reason' => H(T('当前存量为:sumg ，管制上限为:lNumg，超过该商品的管制上限，请减少存量后再进行购买', [':sum' => $newTNS, ':lNum' => $lNum])),
                         'id' => $info['id'],
                         'name' => $product->name
                     ];
