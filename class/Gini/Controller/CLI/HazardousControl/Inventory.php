@@ -4,22 +4,6 @@ namespace Gini\Controller\CLI\HazardousControl;
 
 class Inventory extends \Gini\Controller\CLI
 {
-    private static $rpc;
-    private function getRPC()
-    {
-        if (self::$rpc) return self::$rpc;
-
-        $confs = \Gini\Config::get('app.rpc');
-        $conf = (array)$confs['lab-inventory'];
-        $url = $conf['url'];
-        $rpc = \Gini\IoC::construct('\Gini\RPC', $url);
-        if (!$rpc->mall->authorize($conf['client_id'], $conf['client_secret'])) {
-            return;
-        }
-        self::$rpc = $rpc;
-        return $rpc;
-    }
-
     public function actionCheckRemoteExists()
     {
         $dtstart =  date('Y-m-d', strtotime("-3 days"));
@@ -29,7 +13,7 @@ class Inventory extends \Gini\Controller\CLI
         $limit = 20;
         $conf = \Gini\Config::get('app.rpc')['chemdb'];
         $rpc1 = \Gini\IoC::construct('\Gini\RPC', $conf['url']);
-        $rpc2 = self::getRPC('lab-inventory');
+        $rpc2 = \Gini\Module\AppBase::getAppRPC('lab-inventory');
         while(true) {
             $orders = Those('order')->whose('customized')->is(false)
             ->andWhose('ctime')->isGreaterThan($dtstart)

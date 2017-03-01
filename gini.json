@@ -6,7 +6,8 @@
     "dependencies": {
         "unit-conv": "*",
         "gini": "*",
-        "chem-db-client": "*"
+        "chem-db-client": "*",
+        "app-base": "*"
     },
     "composer": {
         "require": {

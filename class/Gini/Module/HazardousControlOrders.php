@@ -29,15 +29,8 @@ class HazardousControlOrders
             $e->pass();
             return;
         }
-        $confs    = \Gini\Config::get('app.rpc');
-        $conf     = $confs['lab-inventory'];
-        $rpc      = \Gini\IoC::construct('\Gini\RPC', $conf['url']);
-        $group_id = $group->id;
-        $token    = $rpc->mall->authorize($conf['client_id'], $conf['client_secret']);
-        if (!$token) {
-            $e->abort();
-            return ['error' => H(T('存货管理连接中断'))];
-        }
+
+        $rpc = \Gini\Module\AppBase::getAppRPC('lab-inventory');
 
         $newTNS = [];
         $errorCas = [];
@@ -138,34 +131,13 @@ class HazardousControlOrders
         return $types;
     }
 
-    protected static $_RPCs = [];
-    public static function getRPC($type = 'lab-inventory')
-    {
-        $confs = \Gini\Config::get('app.rpc');
-        $conf = $confs[$type] ?: [];
-        if (!self::$_RPCs[$type]) {
-            $rpc = \Gini\IoC::construct('\Gini\RPC', $conf['url']);
-            self::$_RPCs[$type] = $rpc;
-            if ($type == 'lab-inventory') {
-                $token = $rpc->mall->authorize($conf['client_id'], $conf['client_secret']);
-                if (!$token) {
-                    \Gini\Logger::of('lab-orders')
-                        ->error('Mall\\RObject getRPC: authorization failed with {client_id}/{client_secret} !',
-                            [ 'client_id' => $conf['client_id'], 'client_secret' => $conf['client_secret']]);
-                }
-            }
-        }
-
-        return self::$_RPCs[$type];
-    }
-
     private static function _getHazConf($cas_no, $group_id) {
         $conf = [];
         $cache = \Gini\Cache::of('cas-conf');
         $key = "haz-conf[$cas_no][$group_id]";
         $conf = $cache->get($key);
         if (false === $conf) {
-            $rpc = self::getRPC('chemical-limits');
+            $rpc = \Gini\Module\AppBase::getAppRPC('chemical-limits');
             $criteria = ['cas_no'=>$cas_no, 'group_id'=>$group_id];
             $conf = $rpc->admin->inventory->getHazConf($criteria);
             $cache->set($key, $conf, 15);
@@ -181,7 +153,7 @@ class HazardousControlOrders
         $key = "cas-volume-limit[$cas_no][$group_id]";
         $volume = $cache->get($key);
         if (false === $volume) {
-            $rpc = self::getRPC('chemical-limits');
+            $rpc = \Gini\Module\AppBase::getAppRPC('chemical-limits');
             $criteria = ['cas_no'=>$cas_no, 'group_id'=>$group_id];
             $volume = $rpc->admin->inventory->getLimit($criteria);
             $cache->set($key, $volume, 5);
@@ -197,7 +169,7 @@ class HazardousControlOrders
         $key = "cas-volume-inv[$cas_no][$group_id]";
         $volume = $cache->get($key);
         if (false === $volume) {
-            $rpc = self::getRPC('lab-inventory');
+            $rpc = \Gini\Module\AppBase::getAppRPC('lab-inventory');
             $volume = $rpc->mall->inventory->getHazardousTotal($cas_no, $group_id);
             $cache->set($key, $volume, 15);
         }

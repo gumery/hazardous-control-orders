@@ -14,7 +14,7 @@ class ChemicalLimits extends Common
             $this->redirect('error/401');
         }
 
-        $rpc = \Gini\Module\HazardousControlOrders::getRPC('chemical-limits');
+        $rpc = \Gini\Module\AppBase::getAppRPC('chemical-limits');
         $limits = $rpc->admin->inventory->getGroupLimits($group->id);
         $page = (int) $page;
         $vars = [

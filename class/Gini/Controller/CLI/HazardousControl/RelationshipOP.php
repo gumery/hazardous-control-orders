@@ -16,31 +16,6 @@ class RelationshipOP extends \Gini\Controller\CLI
         return \Gini\Config::get('hazardous-control-orders.table') ?: '_hazardous_control_order_product';
     }
 
-    private static $_tagRPC;
-    private static function _getTagRPC()
-    {
-        if (self::$_tagRPC) return self::$_tagRPC;
-
-        $conf = \Gini\Config::get('tag-db.rpc');
-        $tagURL = $conf['url'];
-        $client = \Gini\Config::get('tag-db.client');
-        $clientID= $client['id'];
-        $clientSecret = $client['secret'];
-        $rpc = \Gini\IoC::construct('\Gini\RPC', $tagURL);
-        if ($rpc->tagdb->authorize($clientID, $clientSecret)) {
-            self::$_tagRPC = $rpc;
-        }
-
-        return self::$_tagRPC;
-    }
-
-    private static function _getTagData($gid = 0)
-    {
-        $node = \Gini\Config::get('app.node');
-        $tag = "labmai-{$node}/{$gid}";
-        $rpc = self::_getTagRPC();
-        return (array)$rpc->tagdb->data->get($tag);
-    }
 
     private static $schema = [
         'fields' => [
@@ -255,7 +230,7 @@ class RelationshipOP extends \Gini\Controller\CLI
             $values = [];
             foreach ($rows as $row) {
                 $items = (array) $row->items;
-                $orgs = $this->_getTagData($row->group->id);
+                $orgs = \Gini\Module\AppBase::getGroupInfo(\Gini\Config::get('app.node'), $row->group->id);
                 $orgs = $orgs['organization'];
                 $college_code = $orgs['parent']['code'] ?: $orgs['code'];
                 $college_name = $orgs['parent']['name'] ?: $orgs['name'];

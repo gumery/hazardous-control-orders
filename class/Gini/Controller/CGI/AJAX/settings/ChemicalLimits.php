@@ -10,7 +10,7 @@ class ChemicalLimits extends \Gini\Controller\CGI
         $group = _G('GROUP');
         if (!$me->id || !$group->id || !$me->isAllowedTo('设置')) return;
 
-        $rpc = \Gini\Module\HazardousControlOrders::getRPC('chemical-limits');
+        $rpc = \Gini\Module\AppBase::getAppRPC('chemical-limits');
         $result = $rpc->admin->inventory->searchGroupRequests([
             'group_id'=> $group->id
         ]);
@@ -125,7 +125,7 @@ class ChemicalLimits extends \Gini\Controller\CGI
             ]);
         }
 
-        $rpc = \Gini\Module\HazardousControlOrders::getRPC('chemical-limits');
+        $rpc = \Gini\Module\AppBase::getAppRPC('chemical-limits');
         $result = (bool) $rpc->admin->inventory->addRequest([
             'type'=> $type,
             'cas_no'=> $casNO,
