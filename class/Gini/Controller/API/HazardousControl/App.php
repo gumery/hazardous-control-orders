@@ -17,9 +17,15 @@ class APP extends \Gini\Controller\API\HazardousControl\Base
     {
         $confs = \Gini\Config::get('mall.rpc');
         $conf = $confs['node'];
+        $url = $conf['url'];
         try {
-            $rpc = \Gini\IoC::construct('\Gini\RPC', $conf['url']);
-            $bool = $rpc->mall->authorize($clientID, $clientSecret);
+            $cacheKey = "app#{$url}#{$clientID}#token#{$clientSecret}";
+            $token = \Gini\Module\AppBase::cacheData($cacheKey);
+            if (!$token) {
+                $rpc = \Gini\IoC::construct('\Gini\RPC', $url);
+                $token = $rpc->mall->authorize($clientID, $clientSecret);
+                \Gini\Module\AppBase::cacheData($cacheKey, $token);
+            }
         }
         catch (\Exception $e) {
             throw new \Gini\API\Exception('网络故障', 503);
