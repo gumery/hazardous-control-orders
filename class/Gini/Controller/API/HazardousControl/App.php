@@ -30,7 +30,7 @@ class APP extends \Gini\Controller\API\HazardousControl\Base
         catch (\Exception $e) {
             throw new \Gini\API\Exception('网络故障', 503);
         }
-        if ($bool) {
+        if ($token) {
             $this->setCurrentApp($clientID);
             return session_id();
         }
