@@ -31,6 +31,7 @@ class HazardousControlOrders
         }
 
         $rpc = \Gini\Module\AppBase::getAppRPC('lab-inventory');
+        $group_id = $group->id;
 
         $newTNS = [];
         $errorCas = [];
