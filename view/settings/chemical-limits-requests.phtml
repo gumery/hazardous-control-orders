@@ -5,7 +5,8 @@
 <?php } else { ?>
 <div class="app-page-more-content">
     <ul>
-    <?php foreach ($requests as $vRequest) {
+        <?php foreach ($requests as $vRequest) {
+            if (!is_array($vRequest)) continue;
             $vRequest = a('chemicallimits/request')->setData($vRequest);
         ?>
         <li style="list-style-type:circle;">
