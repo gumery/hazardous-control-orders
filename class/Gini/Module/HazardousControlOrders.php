@@ -102,7 +102,7 @@ class HazardousControlOrders
                 if ($newTNS[$cas_no] > $lNum) {
                     $errorCas[] = $cas_no;
                     $data[] = [
-                        'reason' => H(T('当前存量为:sumg ，管制上限为:lNumg，新购买的商品量将导致存量超过该商品的管制上限，请减少存量后再进行购买', [':sum' => $newTNS[$cas_no], ':lNum' => $lNum])),
+                        'reason' => H(T('当前存量为:sumg ，管制上限为:lNumg，新购买的商品量将导致存量超过该商品的管制上限，请减少存量后再进行购买', [':sum' => $sum, ':lNum' => $lNum])),
                         'id' => $info['id'],
                         'name' => $product->name
                     ];
