@@ -214,6 +214,7 @@ class RelationshipOP extends \Gini\Controller\CLI
         $db = \Gini\Database::db();
         $tableName = self::_getTableName();
         $max = $db->query("SELECT max(order_mtime) FROM {$tableName}")->value() ?: 0;
+        $max = $max ? date('Y-m-d H:i:s', strtotime('-5 minutes', strtotime($max))) : 0;
         $start = 0;
         $perpage = 100;
         $schema = self::$schema;
@@ -239,15 +240,15 @@ class RelationshipOP extends \Gini\Controller\CLI
                 $qRowID = $db->quote($row->id);
                 $qRowMd5 = $db->quote($this->getMd5($row));
                 // 检测有没有历史数据
-                $hisCount = $db->query("SELECT COUNT(*) FROM {$tableName} WHERE order_id={$qRowID}")->value() ?: 0;
+                $hisCount = $db->query("SELECT COUNT(*) FROM {$tableName} WHERE order_id={$qRowID}")->value();
                 if ($hisCount) {
                     // 检测历史数据是不是已经跟最新的数据不一致了
                     // 如果不一致，需要删除重建
                     // 如果一致，就不需要在重复添加了
                     $query = $db->query("DELETE FROM {$tableName} WHERE order_id={$qRowID} AND order_md5!={$qRowMd5}");
-                    if (!$query || !$query->count()) {
+                    if (!$query) {
                         echo "\norder#{$row->id} 更新数据失败\n";
-                        continue;
+                        break 2;
                     }
                 }
 
