@@ -69,7 +69,7 @@ class ChemicalLimits extends \Gini\Controller\CGI
             foreach ($chems as $chem) {
                 $data[] = [
                     'key'=> $chem['cas_no'],
-                    'value'=> $chem['name']
+                    'value'=> "{$chem['name']} ({$chem['cas_no']})"
                 ];
             }
         } 
