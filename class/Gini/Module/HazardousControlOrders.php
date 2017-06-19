@@ -32,12 +32,18 @@ class HazardousControlOrders
 
         $rpc = \Gini\Module\AppBase::getAppRPC('lab-inventory');
         $group_id = $group->id;
-
+        $customizedPrompt = \Gini\Config::get('app.customized_chemical_prompt_enable');
         $newTNS = [];
         $errorCas = [];
         foreach ($products as $info) {
-            if ($info['customized']) continue;
+
+            // 自购化学品提示
+            if (!$customizedPrompt) {
+                if ($info['customized']) continue;
+            }
             $product = a('product', $info['id']);
+
+            if ($product->type != 'chem_reagent') continue;
             if (!$product->cas_no) continue;
 
             if (in_array($product->cas_no, $errorCas)) {
