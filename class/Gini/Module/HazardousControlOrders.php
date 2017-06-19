@@ -38,12 +38,13 @@ class HazardousControlOrders
         foreach ($products as $info) {
 
             // 自购化学品提示
-            if (!$customizedPrompt) {
-                if ($info['customized']) continue;
+            if ($info['customized'] && !!$customizedPrompt) {
+                $product = a('product/customized', $info['id']);
+                if ($product->type != 'chem_reagent') continue;
+            } else {
+                $product = a('product', $info['id']);
             }
-            $product = a('product', $info['id']);
 
-            if ($product->type != 'chem_reagent') continue;
             if (!$product->cas_no) continue;
 
             if (in_array($product->cas_no, $errorCas)) {
