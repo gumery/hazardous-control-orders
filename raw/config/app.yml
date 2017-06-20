@@ -1,0 +1,6 @@
+---
+
+# 自购化学商品存量上限提示开启配置 true：开启提示，false: 关闭提示
+customized_chemical_prompt_enable: ${HAZARDOUS_CONTROL_ORDERS_PROMPT_ENABLE}
+
+...
