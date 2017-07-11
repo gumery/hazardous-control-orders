@@ -39,20 +39,39 @@ class HazardousControlOrders
 
             // 自购化学品提示
             if ($info['customized']) {
-                if ($customizedPrompt === false) continue;
+
+                // 获取自购无法购买的类型
+                $customizedNotBuy = \Gini\Config::get('order.customized_not_buy_types');
+                $customizedNotBuy = explode(',', $customizedNotBuy);
+                if ($customizedPrompt === false && empty($customizedNotBuy)) continue;
                 $product = a('product/customized', $info['id']);
                 if ($product->type != 'chem_reagent') continue;
+
             } else {
                 $product = a('product', $info['id']);
             }
 
-            if (!$product->cas_no) continue;
+            if (!$cas_no = $product->cas_no) continue;
 
             if (in_array($product->cas_no, $errorCas)) {
                 continue;
             }
+            // 自购限制商品提示
+            if ($info['customized'] && !empty($customizedNotBuy)) {
+                // 根据cas_no获取商品的化学品类型
+                $chemicalInfo = \Gini\ChemDB\Client::getTypes($cas_no);
+                // 获取rgtType,rgtTitle组合后的数组
+                $rgtTypeAndRgtTitle = \Gini\ORM\Product::combineRgtTypeAndRgtTitle();
+                $tmpType = array_intersect_key($rgtTypeAndRgtTitle, array_flip($chemicalInfo[$cas_no]));
+                if ($tmpType) {
+                    $data[] = [
+                        'reason' => H(T('是::type', [':type' => implode(',', $tmpType)])),
+                        'id' => $product->id,
+                        'name' => $product->name
+                    ];
+                } else continue;
+            }
 
-            $cas_no  = $product->cas_no;
             $package = $product->package;
             $i       = \Gini\Unit\Conversion::of($product);
             $ldata   = self::_getCasVolume($i, $cas_no, $group_id);
