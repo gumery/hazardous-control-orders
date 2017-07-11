@@ -65,7 +65,7 @@ class HazardousControlOrders
                 $tmpType = array_intersect_key($rgtTypeAndRgtTitle, array_flip($chemicalInfo[$cas_no]));
                 if ($tmpType) {
                     $data[] = [
-                        'reason' => H(T('是::type', [':type' => implode(',', $tmpType)])),
+                        'reason' => H(T('是: :type', [':type' => implode(', ', $tmpType)])) . H(T(' (自购禁止购买该类型商品)')),
                         'id' => $product->id,
                         'name' => $product->name
                     ];
