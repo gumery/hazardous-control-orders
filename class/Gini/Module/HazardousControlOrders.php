@@ -42,7 +42,7 @@ class HazardousControlOrders
 
                 // 获取自购无法购买的类型
                 $customizedNotBuy = \Gini\Config::get('order.customized_not_buy_types');
-                $customizedNotBuy = explode(',', $customizedNotBuy);
+                $customizedNotBuy = ($customizedNotBuy != '${LAB_ORDERS_CUSTOMIZED_NOT_BUY_TYPES}') ? explode(',', $customizedNotBuy) : [];
                 if ($customizedPrompt === false && empty($customizedNotBuy)) continue;
                 $product = a('product/customized', $info['id']);
                 if ($product->type != 'chem_reagent') continue;
