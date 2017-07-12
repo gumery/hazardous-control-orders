@@ -297,7 +297,7 @@ class HazardousControlOrders
         if (!self::$typeTitle) {
             foreach ($rgtTypes as $k => $v) {
                 if ($rgtTitles[$k]) {
-                    self::$typeTitle [$v] = $rgtTitles[$k];
+                    self::$typeTitle[$v] = $rgtTitles[$k];
                 }
             }
         }
