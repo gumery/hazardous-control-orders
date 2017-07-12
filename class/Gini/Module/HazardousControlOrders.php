@@ -46,7 +46,7 @@ class HazardousControlOrders
                 // 将类型转换为对应的中文
                 $tmpType = array_intersect_key($rgtTypeAndRgtTitle, array_flip($tmpType));
                 $data[] = [
-                    'reason' => H(T('是: :type', [':type' => implode(', ', $tmpType)])) . H(T(' (自购禁止购买该类型商品)')),
+                    'reason' => H(T('是: :type (自购禁止购买该类型商品)', [':type' => implode(', ', $tmpType)])),
                     'id' => $product->id,
                     'name' => $product->name
                 ];
@@ -288,16 +288,22 @@ class HazardousControlOrders
         }
     }
 
+    private static $typeTitle;
     public static function combineRgtTypeAndRgtTitle()
     {
         $rgtTypes = \Gini\ORM\Product::$rgt_types;
         $rgtTitles = \Gini\ORM\Product::$rgt_titles;
 
-        foreach ($rgtTypes as $k => $v) {
-            if ($rgtTitles[$k])
-                $ret[$v] = $rgtTitles[$k];
+        if (!self::$typeTitle) {
+            foreach ($rgtTypes as $k => $v) {
+                if ($rgtTitles[$k]) {
+                    $ret[$v] = $rgtTitles[$k];
+                    self::$typeTitle = $ret;
+                }
+            }
         }
-        return $ret;
+
+        return (array) self::$typeTitle;
     }
 }
 
