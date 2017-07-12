@@ -36,31 +36,27 @@ class HazardousControlOrders
 
         // 无法购买
         if (!empty($customizedNotBuy)) {
-            $data = [];
             // 根据cas_no获取商品的化学品类型
             $chemicalInfo = \Gini\ChemDB\Client::getTypes($cas_no);
-            // 获取rgtType,rgtTitle组合后的数组
-            $rgtTypeAndRgtTitle = \Gini\ORM\Product::combineRgtTypeAndRgtTitle();
+            // TODO 获取rgtType,rgtTitle组合后的数组
+            $rgtTypeAndRgtTitle = self::combineRgtTypeAndRgtTitle();
             // 自购配置和自购商品类型求交集
-            $tmpType = array_intersect($customizedNotBuy, $chemicalInfo[$cas_no]);
-            // 将类型转换为对应的中文
-            $tmpType = array_intersect_key($rgtTypeAndRgtTitle, array_flip($tmpType));
-            if ($tmpType) {
-                $tmpData = [
+            $tmpType = array_intersect($customizedNotBuy, (array)$chemicalInfo[$cas_no]);
+            if (!empty($tmpType)) {
+                // 将类型转换为对应的中文
+                $tmpType = array_intersect_key($rgtTypeAndRgtTitle, array_flip($tmpType));
+                $data[] = [
                     'reason' => H(T('是: :type', [':type' => implode(', ', $tmpType)])) . H(T(' (自购禁止购买该类型商品)')),
                     'id' => $product->id,
                     'name' => $product->name
                 ];
+                return $data;
             }
-            $data = [];
-            $tmpData ? array_push($data, $tmpData) : $data;
         }
 
         if ($customizedPrompt === true) {
-            $data = self::_promptCommon($info, $product, $cas_no, $group_id);
+            return self::_promptCommon($info, $product, $cas_no, $group_id);
         }
-
-        return $data;
     }
 
     /*
@@ -69,59 +65,65 @@ class HazardousControlOrders
      */
     private static function _promptGeneral($info,$product, $cas_no, $group_id)
     {
-        $data = self::_promptCommon($info, $product, $cas_no, $group_id);
-        return $data;
+        return self::_promptCommon($info, $product, $cas_no, $group_id);
     }
 
     /*
      * 这个方法一般不需要改动
      *
      */
-    private static $newTNS;
+    private static $newTNS = [];
+    private static $errorCAS = [];
     private static function _promptCommon($info, $product, $cas_no, $group_id)
     {
-        $data = [];
+        $errors = [];
         $package = $product->package;
         $i       = \Gini\Unit\Conversion::of($product);
         $ldata   = self::_getCasVolume($i, $cas_no, $group_id);
         if ($ldata['error']) {
-            $data[] = [
+            $errors[] = [
                 'reason' => $ldata['error'],
                 'id' => $info['id'],
                 'name' => $product->name
             ];
         }
         $volume = $ldata['volume'];
-        if ((string)$volume === '') return $data;
+        if ((string)$volume === '') return $errors;
 
         $lNum = $i->from($volume)->to('g');
         // 如果设置为0不允许购买
         if ((string)$lNum === '0') {
-            $data[] = [
+            $errors[] = [
                 'reason' => H(T('该商品不允许购买')),
                 'id' => $info['id'],
                 'name' => $product->name
             ];
+            return $errors;
         }
-        elseif ($lNum) {
+
+        if ($lNum) {
             $pdata = self::_getProductVolume($i, $package, $info['quantity']);
             if ($pdata['error']) {
-                $data[] = [
+                $errors[] = [
                     'reason' => $pdata['error'],
                     'id' => $info['id'],
                     'name' => $product->name
                 ];
-                return $data;
+                return $errors;
             }
 
             $idata = self::_getInventoryVolume($cas_no, $group_id);
             if ($idata['error']) {
-                $data[] = [
+                $errors[] = [
                     'reason' => $idata['error'],
                     'id' => $info['id'],
                     'name' => $product->name
                 ];
-                return $data;
+                return $errors;
+            }
+
+            if (in_array($cas_no, self::$errorCAS)) {
+                return $errors;
             }
 
             $conf = self::_getHazConf($cas_no, $group_id);
@@ -136,18 +138,17 @@ class HazardousControlOrders
             }
 
             if (self::$newTNS[$cas_no] > $lNum) {
-                //$errorCas[] = $cas_no;
-                $data[] = [
-                    'cas_no' => $cas_no,
+                self::$errorCAS[] = $cas_no;
+                $errors[] = [
                     'reason' => H(T('当前存量为:sumg ，管制上限为:lNumg，新购买的商品量将导致存量超过该商品的管制上限，请减少存量后再进行购买', [':sum' => $sum, ':lNum' => $lNum])),
                     'id' => $info['id'],
                     'name' => $product->name
                 ];
             }
         }
-
-        return $data;
+        return $errors;
     }
+
     public static function getUnableProducts($e, $products, $group, $user)
     {
         if (!count($products)) {
@@ -156,9 +157,7 @@ class HazardousControlOrders
         }
 
         $group_id = $group->id;
-        // $newTNS = [];
-        // $errorCas = [];
-        // $data = [];
+        $data = [];
         foreach ($products as $info) {
 
             // 自购化学品提示
@@ -167,21 +166,19 @@ class HazardousControlOrders
                 $cas_no = $product->cas_no;
                 if (!$cas_no) continue;
 
-                $data = self::_promptCustomized($info, $product, $cas_no, $group_id);
-                // 提取$data里的cas_no
-                $errorCas = array_column($data, 'cas_no');
-                if (in_array($cas_no, $errorCas)) continue;
-
+                $myError = self::_promptCustomized($info, $product, $cas_no, $group_id);
+                if (!empty($myError)) {
+                    $data = $data + $myError;
+                }
             } else {
                 $product = a('product', $info['id']);
                 $cas_no = $product->cas_no;
                 if (!$cas_no) continue;
 
-                $data = self::_promptGeneral($info, $product, $cas_no, $group_id);
-                // 提取$data里的cas_no
-                $errorCas = array_column($data, 'cas_no');
-                if (in_array($cas_no, $errorCas)) continue;
-
+                $myError = self::_promptGeneral($info, $product, $cas_no, $group_id);
+                if (!empty($myError)) {
+                    $data = $data + $myError;
+                }
             }
         }
 
@@ -289,6 +286,18 @@ class HazardousControlOrders
                 '@title' => T('化学品库存上限'),
             ];
         }
+    }
+
+    public static function combineRgtTypeAndRgtTitle()
+    {
+        $rgtTypes = \Gini\ORM\Product::$rgt_types;
+        $rgtTitles = \Gini\ORM\Product::$rgt_titles;
+
+        foreach ($rgtTypes as $k => $v) {
+            if ($rgtTitles[$k])
+                $ret[$v] = $rgtTitles[$k];
+        }
+        return $ret;
     }
 }
 
