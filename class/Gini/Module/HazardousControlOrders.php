@@ -38,7 +38,7 @@ class HazardousControlOrders
         if (!empty($customizedNotBuy)) {
             // 根据cas_no获取商品的化学品类型
             $chemicalInfo = \Gini\ChemDB\Client::getTypes($cas_no);
-            // TODO 获取rgtType,rgtTitle组合后的数组
+            // 获取rgtType,rgtTitle组合后的数组
             $rgtTypeAndRgtTitle = self::combineRgtTypeAndRgtTitle();
             // 自购配置和自购商品类型求交集
             $tmpType = array_intersect($customizedNotBuy, (array)$chemicalInfo[$cas_no]);
@@ -78,7 +78,11 @@ class HazardousControlOrders
     {
         $errors = [];
         $package = $product->package;
-        $i       = \Gini\Unit\Conversion::of($product);
+        if ($info['customized']) {
+            $i       = \Gini\Unit\Conversion::of("cas/{$cas_no}");
+        } else {
+            $i       = \Gini\Unit\Conversion::of($product);
+        }
         $ldata   = self::_getCasVolume($i, $cas_no, $group_id);
         if ($ldata['error']) {
             $errors[] = [
