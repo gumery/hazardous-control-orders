@@ -168,7 +168,7 @@ class HazardousControlOrders
 
                 $myError = self::_promptCustomized($info, $product, $cas_no, $group_id);
                 if (!empty($myError)) {
-                    $data = $data + $myError;
+                    $data = array_merge($data, $myError);
                 }
             } else {
                 $product = a('product', $info['id']);
@@ -177,7 +177,7 @@ class HazardousControlOrders
 
                 $myError = self::_promptGeneral($info, $product, $cas_no, $group_id);
                 if (!empty($myError)) {
-                    $data = $data + $myError;
+                    $data = array_merge($data, $myError);
                 }
             }
         }
