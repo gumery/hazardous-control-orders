@@ -22,7 +22,132 @@ class HazardousControlOrders
 
         return $errors;
     }
+    /*
+     * getUnableProduct自购逻辑
+     *
+     */
+    private static function _promptCustomized($info, $product, $cas_no, $group_id)
+    {
+        // 存量上限、无法购买
+        // 获取自购无法购买的类型
+        $customizedNotBuy = \Gini\Config::get('order.customized_not_buy_types');
+        $customizedNotBuy = ($customizedNotBuy != '${LAB_ORDERS_CUSTOMIZED_NOT_BUY_TYPES}') ? explode(',', $customizedNotBuy) : [];
+        $customizedPrompt = \Gini\Config::get('app.customized_chemical_prompt_enable');
 
+        // 无法购买
+        if (!empty($customizedNotBuy)) {
+            $data = [];
+            // 根据cas_no获取商品的化学品类型
+            $chemicalInfo = \Gini\ChemDB\Client::getTypes($cas_no);
+            // 获取rgtType,rgtTitle组合后的数组
+            $rgtTypeAndRgtTitle = \Gini\ORM\Product::combineRgtTypeAndRgtTitle();
+            // 自购配置和自购商品类型求交集
+            $tmpType = array_intersect($customizedNotBuy, $chemicalInfo[$cas_no]);
+            // 将类型转换为对应的中文
+            $tmpType = array_intersect_key($rgtTypeAndRgtTitle, array_flip($tmpType));
+            if ($tmpType) {
+                $tmpData = [
+                    'reason' => H(T('是: :type', [':type' => implode(', ', $tmpType)])) . H(T(' (自购禁止购买该类型商品)')),
+                    'id' => $product->id,
+                    'name' => $product->name
+                ];
+            }
+            $data = [];
+            $tmpData ? array_push($data, $tmpData) : $data;
+        }
+
+        if ($customizedPrompt === true) {
+            $data = self::_promptCommon($info, $product, $cas_no, $group_id);
+        }
+
+        return $data;
+    }
+
+    /*
+     * getUnableProduct普通商品逻辑
+     *
+     */
+    private static function _promptGeneral($info,$product, $cas_no, $group_id)
+    {
+        $data = self::_promptCommon($info, $product, $cas_no, $group_id);
+        return $data;
+    }
+
+    /*
+     * 这个方法一般不需要改动
+     *
+     */
+    private static $newTNS;
+    private static function _promptCommon($info, $product, $cas_no, $group_id)
+    {
+        $data = [];
+        $package = $product->package;
+        $i       = \Gini\Unit\Conversion::of($product);
+        $ldata   = self::_getCasVolume($i, $cas_no, $group_id);
+        if ($ldata['error']) {
+            $data[] = [
+                'reason' => $ldata['error'],
+                'id' => $info['id'],
+                'name' => $product->name
+            ];
+        }
+        $volume = $ldata['volume'];
+        if ((string)$volume === '') return $data;
+
+        $lNum = $i->from($volume)->to('g');
+        // 如果设置为0不允许购买
+        if ((string)$lNum === '0') {
+            $data[] = [
+                'reason' => H(T('该商品不允许购买')),
+                'id' => $info['id'],
+                'name' => $product->name
+            ];
+        }
+        elseif ($lNum) {
+            $pdata = self::_getProductVolume($i, $package, $info['quantity']);
+            if ($pdata['error']) {
+                $data[] = [
+                    'reason' => $pdata['error'],
+                    'id' => $info['id'],
+                    'name' => $product->name
+                ];
+                return $data;
+            }
+
+            $idata = self::_getInventoryVolume($cas_no, $group_id);
+            if ($idata['error']) {
+                $data[] = [
+                    'reason' => $idata['error'],
+                    'id' => $info['id'],
+                    'name' => $product->name
+                ];
+                return $data;
+            }
+
+            $conf = self::_getHazConf($cas_no, $group_id);
+            $count_cart = $conf['count_cart'];
+            $iNum = $i->from($idata['volume'])->to('g');
+
+            $sum = $iNum;
+            self::$newTNS[$cas_no] = self::$newTNS[$cas_no] ?: $sum;
+            if ($count_cart) {
+                $pNum = $i->from($pdata['volume'])->to('g');
+                self::$newTNS[$cas_no] += $pNum;
+            }
+
+            if (self::$newTNS[$cas_no] > $lNum) {
+                //$errorCas[] = $cas_no;
+                $data[] = [
+                    'cas_no' => $cas_no,
+                    'reason' => H(T('当前存量为:sumg ，管制上限为:lNumg，新购买的商品量将导致存量超过该商品的管制上限，请减少存量后再进行购买', [':sum' => $sum, ':lNum' => $lNum])),
+                    'id' => $info['id'],
+                    'name' => $product->name
+                ];
+            }
+        }
+
+        return $data;
+    }
     public static function getUnableProducts($e, $products, $group, $user)
     {
         if (!count($products)) {
@@ -30,110 +155,33 @@ class HazardousControlOrders
             return;
         }
 
-        $rpc = \Gini\Module\AppBase::getAppRPC('lab-inventory');
         $group_id = $group->id;
-        $customizedPrompt = \Gini\Config::get('app.customized_chemical_prompt_enable');
-        $newTNS = [];
-        $errorCas = [];
+        // $newTNS = [];
+        // $errorCas = [];
+        // $data = [];
         foreach ($products as $info) {
 
             // 自购化学品提示
             if ($info['customized']) {
-
-                // 获取自购无法购买的类型
-                $customizedNotBuy = \Gini\Config::get('order.customized_not_buy_types');
-                $customizedNotBuy = ($customizedNotBuy != '${LAB_ORDERS_CUSTOMIZED_NOT_BUY_TYPES}') ? explode(',', $customizedNotBuy) : [];
-                if ($customizedPrompt === false && empty($customizedNotBuy)) continue;
                 $product = a('product/customized', $info['id']);
-                if ($product->type != 'chem_reagent') continue;
+                $cas_no = $product->cas_no;
+                if (!$cas_no) continue;
+
+                $data = self::_promptCustomized($info, $product, $cas_no, $group_id);
+                // 提取$data里的cas_no
+                $errorCas = array_column($data, 'cas_no');
+                if (in_array($cas_no, $errorCas)) continue;
 
             } else {
                 $product = a('product', $info['id']);
-            }
+                $cas_no = $product->cas_no;
+                if (!$cas_no) continue;
 
-            if (!$cas_no = $product->cas_no) continue;
+                $data = self::_promptGeneral($info, $product, $cas_no, $group_id);
+                // 提取$data里的cas_no
+                $errorCas = array_column($data, 'cas_no');
+                if (in_array($cas_no, $errorCas)) continue;
 
-            if (in_array($product->cas_no, $errorCas)) {
-                continue;
-            }
-            // 自购限制商品提示
-            if ($info['customized'] && !empty($customizedNotBuy)) {
-                // 根据cas_no获取商品的化学品类型
-                $chemicalInfo = \Gini\ChemDB\Client::getTypes($cas_no);
-                // 获取rgtType,rgtTitle组合后的数组
-                $rgtTypeAndRgtTitle = \Gini\ORM\Product::combineRgtTypeAndRgtTitle();
-                $tmpType = array_intersect_key($rgtTypeAndRgtTitle, array_flip($chemicalInfo[$cas_no]));
-                if ($tmpType) {
-                    $data[] = [
-                        'reason' => H(T('是: :type', [':type' => implode(', ', $tmpType)])) . H(T(' (自购禁止购买该类型商品)')),
-                        'id' => $product->id,
-                        'name' => $product->name
-                    ];
-                } else continue;
-            }
-
-            $package = $product->package;
-            $i       = \Gini\Unit\Conversion::of($product);
-            $ldata   = self::_getCasVolume($i, $cas_no, $group_id);
-            if ($ldata['error']) {
-                    $data[] = [
-                        'reason' => $ldata['error'],
-                        'id' => $info['id'],
-                        'name' => $product->name
-                    ];
-            }
-            $volume = $ldata['volume'];
-            if ((string)$volume === '') continue;
-
-            $lNum = $i->from($volume)->to('g');
-            // 如果设置为0不允许购买
-            if ((string)$lNum === '0') {
-                $data[] = [
-                    'reason' => H(T('该商品不允许购买')),
-                    'id' => $info['id'],
-                    'name' => $product->name
-                ];
-            }
-            elseif ($lNum) {
-                $pdata = self::_getProductVolume($i, $package, $info['quantity']);
-                if ($pdata['error']) {
-                    $data[] = [
-                        'reason' => $pdata['error'],
-                        'id' => $info['id'],
-                        'name' => $product->name
-                    ];
-                    continue;
-                }
-
-                $idata = self::_getInventoryVolume($cas_no, $group_id);
-                if ($idata['error']) {
-                    $data[] = [
-                        'reason' => $idata['error'],
-                        'id' => $info['id'],
-                        'name' => $product->name
-                    ];
-                    continue;
-                }
-
-                $conf = self::_getHazConf($cas_no, $group_id);
-                $count_cart = $conf['count_cart'];
-                $iNum = $i->from($idata['volume'])->to('g');
-
-                $sum = $iNum;
-                $newTNS[$cas_no] = $newTNS[$cas_no] ?: $sum;
-                if ($count_cart) {
-                    $pNum = $i->from($pdata['volume'])->to('g');
-                    $newTNS[$cas_no] += $pNum;
-                }
-
-                if ($newTNS[$cas_no] > $lNum) {
-                    $errorCas[] = $cas_no;
-                    $data[] = [
-                        'reason' => H(T('当前存量为:sumg ，管制上限为:lNumg，新购买的商品量将导致存量超过该商品的管制上限，请减少存量后再进行购买', [':sum' => $sum, ':lNum' => $lNum])),
-                        'id' => $info['id'],
-                        'name' => $product->name
-                    ];
-                }
             }
         }
 
