@@ -114,10 +114,18 @@ class ChemicalLimits extends \Gini\Controller\CGI
                     'message'=> T('请重新选择化学品')
                 ]);
             }
+            $chemTypes = $chemInfo['types'];
+            if (!is_array($chemTypes) || !in_array($type, $chemTypes)) {
+                return \Gini\IoC::construct('\Gini\CGI\Response\JSON', [
+                    'code'=> 2,
+                    'message'=> T('化学品与分类不一致')
+                ]);
+            }
             $chem = ['cas'=> $casNO, 'state'=> $chemInfo['state'], 'default'];
         } else {
             $chem = ['default'];
         }
+
         if (!(\Gini\Unit\Conversion::of($chem)->validate($volume))) {
             return \Gini\IoC::construct('\Gini\CGI\Response\JSON', [
                 'code'=> 4,
