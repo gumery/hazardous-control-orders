@@ -33,7 +33,7 @@
                 </dd>
                 <?php }?>
                 <?php foreach ($vRequest->logs as $key => $log) { ?>
-                    <?php if ($log['group'] && $log['user'] && $log['status'] == 2) { ?>
+                    <?php if ($log['user'] && $log['status'] == 2) { ?>
                         <dd style="padding:3px 5px;margin:3px;background:#FFF;">
                             <?=T(':time :user 批准了 :owner 的申请: :note', [
                                 ':time'=> $log['date'],
@@ -42,7 +42,7 @@
                                 ':note'=> $log['message'] ?: '--'
                             ])?>
                         </dd>
-                    <?php } elseif ($log['group'] && $log['user'] && $log['status'] == 3) {?>
+                    <?php } elseif ($log['user'] && $log['status'] == 3) {?>
                         <dd style="padding:3px 5px;margin:3px;background:#FFF;">
                             <?=T(':time :user 拒绝了 :owner 的申请: :note', [
                                 ':time'=> $log['date'],
